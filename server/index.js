@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const multer = require('multer');
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '.env') });
@@ -11,7 +12,8 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 console.log('Environment variables loaded:', {
   PORT: process.env.PORT,
   MONGODB_URI_EXISTS: !!process.env.MONGODB_URI,
-  JWT_SECRET_EXISTS: !!process.env.JWT_SECRET
+  JWT_SECRET_EXISTS: !!process.env.JWT_SECRET,
+  EMAIL_CONFIG_EXISTS: !!process.env.EMAIL_USER
 });
 
 const app = express();
@@ -44,20 +46,38 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 // Import routes
 const authRoutes = require('./routes/auth');
-const donationRoutes = require('./routes/donations');
-const adminRoutes = require('./routes/admin');
+const donationRoutes = require('./routes/donationRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/donations', donationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
+
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to Food Rescue Network API' });
+  res.json({ message: 'Welcome to Food Rescue Hub API' });
 });
+
+// Scheduled tasks for automatic expiration of donations
+const setupScheduledTasks = require('./services/scheduledTasks');
+setupScheduledTasks();
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
+  
+  // Handle multer errors
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ 
+        message: 'File is too large. Maximum size is 5MB.' 
+      });
+    }
+    return res.status(400).json({ message: `Upload error: ${err.message}` });
+  }
+  
   res.status(500).json({ message: 'Something went wrong!' });
 });
 

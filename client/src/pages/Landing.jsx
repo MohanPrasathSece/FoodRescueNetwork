@@ -11,6 +11,10 @@ import {
   SimpleGrid,
   useColorModeValue,
   createIcon,
+  Flex,
+  VStack,
+  Image,
+  Divider,
 } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -29,95 +33,132 @@ const Arrow = createIcon({
 
 export default function Landing() {
   const { user } = useAuth();
-  // Move the useColorModeValue hook call to the top level before any conditional returns
-  const iconColor = useColorModeValue('gray.800', 'gray.300');
   
-  // Redirect authenticated users based on role
-  if (user) {
-    if (user.role === 'donor') {
-      return <Navigate to="/donor/dashboard" />;
-    } else if (user.role === 'volunteer') {
-      return <Navigate to="/volunteer/dashboard" />;
-    } else if (user.role === 'admin') {
-      return <Navigate to="/admin/dashboard" />;
-    }
-  }
+  // Move all hook calls to the top level before any conditional returns
+  const iconColor = useColorModeValue('gray.800', 'gray.300');
+  const bgGradient = useColorModeValue(
+    'linear(to-b, green.50, white)',
+    'linear(to-b, gray.900, gray.800)'
+  );
+  const cardBg = useColorModeValue('white', 'gray.700');
   
   return (
-    <Container maxW={'3xl'}>
-      <Stack
-        as={Box}
-        textAlign={'center'}
-        spacing={{ base: 8, md: 14 }}
-        py={{ base: 20, md: 36 }}>
-        <Heading
-          fontWeight={600}
-          fontSize={{ base: '2xl', sm: '4xl', md: '6xl' }}
-          lineHeight={'110%'}>
-          Reducing Food Waste <br />
-          <Text as={'span'} color={'green.400'}>
-            Helping Communities
-          </Text>
-        </Heading>
-        <Text color={'gray.500'}>
-          Join our network of food donors and volunteers working together to reduce food waste
-          and help those in need. Whether you're a restaurant, grocery store, or someone who
-          wants to make a difference, we make it easy to connect and contribute.
-        </Text>
+    <Box bgGradient={bgGradient} minH="100vh">
+      <Container maxW={'6xl'} pt={10}>
+        <Flex justifyContent="flex-end" mb={4}></Flex>
+        
+        {/* Hero Section */}
         <Stack
-          direction={'column'}
-          spacing={3}
-          align={'center'}
-          alignSelf={'center'}
-          position={'relative'}>
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6} mb={4}>
-            <Button
-              as={RouterLink}
-              to='/register?role=donor'
-              colorScheme={'green'}
-              bg={'green.400'}
-              rounded={'full'}
-              px={6}
-              size="lg"
-              _hover={{
-                bg: 'green.500',
-              }}>
-              Donate Food
-            </Button>
-            <Button
-              as={RouterLink}
-              to='/register?role=volunteer'
-              colorScheme={'blue'}
-              bg={'blue.400'}
-              rounded={'full'}
-              px={6}
-              size="lg"
-              _hover={{
-                bg: 'blue.500',
-              }}>
-              I Need Food
-            </Button>
-          </SimpleGrid>
-          <Button
-            as={RouterLink}
-            to='/login'
-            variant={'link'}
-            colorScheme={'green'}
-            size={'sm'}>
-            Already have an account? Sign in
-          </Button>
-          <Box>
-            <Icon
-              as={Arrow}
-              color={iconColor} /* Use the pre-computed value here */
-              w={71}
-              position={'absolute'}
-              right={-71}
-              top={'10px'}
-            />
-          </Box>
+          as={Box}
+          textAlign={'center'}
+          spacing={{ base: 8, md: 14 }}
+          py={{ base: 10, md: 20 }}>
+          <Heading
+            fontWeight={700}
+            fontSize={{ base: '3xl', sm: '4xl', md: '6xl' }}
+            lineHeight={'110%'}>
+            Reducing Food Waste <br />
+            <Text as={'span'} color={'green.400'}>
+              Helping Communities
+            </Text>
+          </Heading>
+          <Text color={'gray.500'} fontSize={{ base: 'lg', md: 'xl' }} maxW={'3xl'} mx="auto">
+            Join our network of food donors and volunteers working together to reduce food waste
+            and help those in need. Whether you're a restaurant, grocery store, or someone who
+            wants to make a difference, we make it easy to connect and contribute.
+          </Text>
+          
+          {/* Main CTA Section */}
+          <Stack
+            direction={'column'}
+            spacing={6}
+            align={'center'}
+            alignSelf={'center'}
+            position={'relative'}
+            zIndex={1}>
+            
+            <Heading as="h2" size="lg" mb={2}>
+              I want to:
+            </Heading>
+            
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 5, md: 8 }} width="100%" maxW="2xl">
+              <VStack 
+                spacing={4} 
+                p={6} 
+                borderRadius="lg" 
+                boxShadow="xl"
+                bg={cardBg}
+                _hover={{ transform: 'translateY(-5px)', transition: '0.3s' }}
+              >
+                <Image 
+                  src="/donate-icon.png" 
+                  alt="Donate Food" 
+                  boxSize="100px"
+                />
+                <Heading as="h3" size="md">Donate Food</Heading>
+                <Text textAlign="center">Share your excess food with those in need</Text>
+                <Button
+                  as={RouterLink}
+                  to='/register?role=donor'
+                  colorScheme={'green'}
+                  rounded={'full'}
+                  px={6}
+                  size="lg"
+                  width="100%"
+                  _hover={{
+                    bg: 'green.500',
+                  }}>
+                  Become a Donor
+                </Button>
+              </VStack>
+              
+              <VStack 
+                spacing={4} 
+                p={6} 
+                borderRadius="lg" 
+                boxShadow="xl"
+                bg={cardBg}
+                _hover={{ transform: 'translateY(-5px)', transition: '0.3s' }}
+              >
+                <Image 
+                  src="/receive-icon.png" 
+                  alt="Receive Food" 
+                  boxSize="100px"
+                />
+                <Heading as="h3" size="md">Find Food</Heading>
+                <Text textAlign="center">Connect with local food donations near you</Text>
+                <Button
+                  as={RouterLink}
+                  to='/register?role=volunteer'
+                  colorScheme={'blue'}
+                  rounded={'full'}
+                  px={6}
+                  size="lg"
+                  width="100%"
+                  _hover={{
+                    bg: 'blue.500',
+                  }}>
+                  Find Available Food
+                </Button>
+              </VStack>
+            </SimpleGrid>
+            
+            <Divider my={8} />
+            
+            <Text color={'gray.500'} fontSize="md">
+              Already have an account?{' '}
+              <Button
+                as={RouterLink}
+                to='/login'
+                variant={'link'}
+                colorScheme={'green'}
+                size={'md'}>
+                Sign in here
+              </Button>
+            </Text>
+          </Stack>
         </Stack>
-      </Stack>
-    </Container>
+      </Container>
+    </Box>
   );
 }

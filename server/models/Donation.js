@@ -11,6 +11,10 @@ const donationSchema = new mongoose.Schema({
     enum: ['produce', 'prepared', 'packaged'],
     required: true
   },
+  foodName: {
+    type: String,
+    required: true
+  },
   description: {
     type: String,
     required: true
@@ -27,12 +31,26 @@ const donationSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
+  image: {
+    data: Buffer,
+    contentType: String
+  },
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      required: true
+    }
+  },
   pickupAddress: {
-    street: String,
-    city: String,
-    state: String,
-    zipCode: String,
-    required: true
+    street: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    zipCode: { type: String, required: true }
   },
   pickupInstructions: String,
   status: {
@@ -55,11 +73,35 @@ const donationSchema = new mongoose.Schema({
   }
 });
 
+// Create a 2dsphere index for geospatial queries
+donationSchema.index({ location: '2dsphere' });
+
 // Update the updatedAt timestamp before saving
 donationSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();
 });
+
+// Method to check if donation is expired
+donationSchema.methods.isExpired = function() {
+  return this.expirationDate < new Date();
+};
+
+// Static method to find nearby donations
+donationSchema.statics.findNearby = function(coordinates, maxDistance = 10000) {
+  return this.find({
+    location: {
+      $near: {
+        $geometry: {
+          type: 'Point',
+          coordinates: coordinates
+        },
+        $maxDistance: maxDistance // in meters
+      }
+    },
+    status: 'available'
+  });
+};
 
 const Donation = mongoose.model('Donation', donationSchema);
 
