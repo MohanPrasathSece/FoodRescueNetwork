@@ -74,7 +74,35 @@ const emailTemplates = {
         <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated message from Food Rescue Hub. Please do not reply to this email.</p>
       </div>
     `
-  })
+  }),
+  
+  donationRemovedByAdmin: (donorName, foodName, adminName) => ({
+    subject: `Your Donation Has Been Removed: ${foodName}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #e53e3e;">Donation Removed by Admin</h2>
+        <p>Hello ${donorName},</p>
+        <p>Your donation <strong>${foodName}</strong> has been removed by an administrator (${adminName}) due to policy or moderation reasons.</p>
+        <p>If you have any questions, please contact support.</p>
+        <p style="margin-top: 20px;">Thank you for being part of our food rescue community.</p>
+        <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated message from Food Rescue Hub. Please do not reply to this email.</p>
+      </div>
+    `
+  }),
+  
+  userBannedByAdmin: (userName, adminName) => ({
+    subject: `Account Action: You Have Been Banned`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #e53e3e;">Account Banned</h2>
+        <p>Hello ${userName},</p>
+        <p>Your account has been banned by an administrator (${adminName}) due to a violation of our community guidelines or terms of service.</p>
+        <p>If you believe this is a mistake, please contact support for further clarification.</p>
+        <p style="margin-top: 20px;">Thank you for your understanding.</p>
+        <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated message from Food Rescue Hub. Please do not reply to this email.</p>
+      </div>
+    `
+  }),
 };
 
 // Send email function

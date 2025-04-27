@@ -3,20 +3,52 @@ const router = express.Router();
 const Donation = require('../models/Donation');
 const Pickup = require('../models/Pickup');
 const { auth, authorize } = require('../middleware/auth');
+const emailService = require('../services/emailService');
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-// Create new donation
-router.post('/', auth, authorize('donor'), async (req, res) => {
+// Create new donation (supports image upload)
+router.post('/', auth, authorize('donor'), upload.single('image'), async (req, res) => {
   try {
+    const { body, file } = req;
+    // Parse pickupAddress if sent as JSON string
+    let pickupAddress = body.pickupAddress;
+    if (typeof pickupAddress === 'string') {
+      try { pickupAddress = JSON.parse(pickupAddress); } catch {}
+    }
     const donation = new Donation({
-      ...req.body,
       donor: req.user._id,
-      status: 'available'
+      status: 'available',
+      foodName: body.foodName,
+      description: body.description,
+      quantity: body.quantity,
+      unit: body.unit,
+      expirationDate: body.expirationDate,
+      pickupAddress,
+      foodType: body.foodType || 'produce',
+      location: body.location || { type: 'Point', coordinates: [0, 0] },
+      ...(file && { image: { data: file.buffer, contentType: file.mimetype } })
     });
-
+    
     await donation.save();
     res.status(201).json(donation);
   } catch (error) {
+    console.error('Error creating donation:', error);
     res.status(400).json({ message: 'Error creating donation', error: error.message });
+  }
+});
+
+// Get all donations (for admin/analytics, not for donors/volunteers)
+router.get('/', auth, async (req, res) => {
+  try {
+    const donations = await Donation.find()
+      .populate('donor', 'name organization')
+      .sort({ createdAt: -1 });
+    res.json(donations);
+  } catch (error) {
+    console.error('Error fetching all donations:', error);
+    res.status(500).json({ message: 'Error fetching all donations', error: error.message, stack: error.stack });
   }
 });
 
@@ -82,10 +114,30 @@ router.patch('/:id', auth, authorize('donor'), async (req, res) => {
   }
 });
 
+// Claim a donation
+router.patch('/:id/claim', auth, async (req, res) => {
+  try {
+    const donation = await Donation.findById(req.params.id);
+    if (!donation) {
+      return res.status(404).json({ message: 'Donation not found' });
+    }
+    if (donation.status !== 'available') {
+      return res.status(400).json({ message: 'Donation cannot be claimed' });
+    }
+    donation.status = 'claimed';
+    donation.claimedBy = req.user.id;
+    await donation.save();
+    res.json(donation);
+  } catch (error) {
+    console.error('Error claiming donation:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Claim donation
 router.post('/:id/claim', auth, authorize('volunteer'), async (req, res) => {
   try {
-    const donation = await Donation.findById(req.params.id);
+    const donation = await Donation.findById(req.params.id).populate('donor', 'name email');
     
     if (!donation) {
       return res.status(404).json({ message: 'Donation not found' });
@@ -109,6 +161,19 @@ router.post('/:id/claim', auth, authorize('volunteer'), async (req, res) => {
     });
 
     await pickup.save();
+
+    // Send email notification to donor
+    if (donation.donor && donation.donor.email) {
+      try {
+        await emailService.sendEmail(
+          donation.donor.email,
+          'donationRequest',
+          [donation.donor.name, donation.foodName || donation.title, req.user.name]
+        );
+      } catch (emailErr) {
+        console.error('Error sending donor notification:', emailErr);
+      }
+    }
 
     res.json({ donation, pickup });
   } catch (error) {

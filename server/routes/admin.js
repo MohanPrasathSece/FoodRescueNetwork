@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Donation = require('../models/Donation');
 const Pickup = require('../models/Pickup');
 const { auth, authorize } = require('../middleware/auth');
+const emailService = require('../services/emailService');
 
 // Middleware to ensure admin access
 router.use(auth, authorize('admin'));
@@ -33,6 +34,20 @@ router.patch('/users/:id', async (req, res) => {
 
     user.status = status;
     await user.save();
+
+    // Send email notification if banned
+    if (status === 'inactive' && user.email) {
+      try {
+        await emailService.sendEmail(
+          user.email,
+          'userBannedByAdmin',
+          [user.name, req.user.name]
+        );
+      } catch (emailErr) {
+        console.error('Error sending ban notification:', emailErr);
+      }
+    }
+
     res.json(user);
   } catch (error) {
     res.status(400).json({ message: 'Error updating user', error: error.message });
@@ -49,6 +64,32 @@ router.get('/donations', async (req, res) => {
     res.json(donations);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching donations', error: error.message });
+  }
+});
+
+// Admin delete donation
+router.delete('/donations/:id', async (req, res) => {
+  try {
+    const donation = await Donation.findById(req.params.id).populate('donor', 'name email');
+    if (!donation) {
+      return res.status(404).json({ message: 'Donation not found' });
+    }
+    await donation.remove();
+    // Send email notification to donor
+    if (donation.donor && donation.donor.email) {
+      try {
+        await emailService.sendEmail(
+          donation.donor.email,
+          'donationRemovedByAdmin',
+          [donation.donor.name, donation.foodName || donation.title, req.user.name]
+        );
+      } catch (emailErr) {
+        console.error('Error sending donor removal notification:', emailErr);
+      }
+    }
+    res.json({ message: 'Donation removed' });
+  } catch (error) {
+    res.status(400).json({ message: 'Error removing donation', error: error.message });
   }
 });
 

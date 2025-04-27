@@ -40,34 +40,12 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-
     try {
-      const result = await register(formData);
-      if (result.success) {
-        toast({
-          title: 'Registration successful',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-        navigate(`/${formData.role}/dashboard`);
-      } else {
-        toast({
-          title: 'Registration failed',
-          description: result.error,
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-      }
+      const user = await register(formData);
+      toast({ title: 'Registration successful', status: 'success', duration: 3000, isClosable: true });
+      navigate(`/${user.role}/dashboard`);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      toast({ title: 'Registration failed', description: error.response?.data?.message || error.message || 'An unexpected error occurred', status: 'error', duration: 3000, isClosable: true });
     } finally {
       setIsLoading(false);
     }

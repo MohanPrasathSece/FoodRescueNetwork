@@ -63,6 +63,8 @@ import {
 } from '@chakra-ui/react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
@@ -739,13 +741,10 @@ export default function AdminDashboard() {
             <ModalBody>
               <VStack spacing={4} align="stretch">
                 {selectedDonation.imageUrl && (
-                  <Image 
-                    src={selectedDonation.imageUrl} 
-                    alt={selectedDonation.foodName}
-                    borderRadius="md"
-                    maxH="200px"
-                    objectFit="cover"
-                  />
+                  <Box my={3}>
+                    <Text fontWeight="bold">Image:</Text>
+                    <Image src={selectedDonation.imageUrl} alt="Donation" maxH="200px" borderRadius={8} />
+                  </Box>
                 )}
                 
                 <HStack>
@@ -769,7 +768,7 @@ export default function AdminDashboard() {
                 </HStack>
                 
                 <HStack>
-                  <Text fontWeight="bold" width="120px">Expiry Date:</Text>
+                  <Text fontWeight="bold" width="120px">Expiration Date:</Text>
                   <Text>{new Date(selectedDonation.expirationDate).toLocaleString()}</Text>
                 </HStack>
                 
@@ -784,23 +783,19 @@ export default function AdminDashboard() {
                   </Badge>
                 </HStack>
                 
-                <Divider />
-                
-                <Text fontWeight="bold">Donor Information:</Text>
-                <HStack>
-                  <Text fontWeight="bold" width="120px">Name:</Text>
-                  <Text>{selectedDonation.donor?.name || 'Unknown'}</Text>
-                </HStack>
-                
-                {selectedDonation.donor?.organization && (
-                  <HStack>
-                    <Text fontWeight="bold" width="120px">Organization:</Text>
-                    <Text>{selectedDonation.donor.organization}</Text>
-                  </HStack>
+                {selectedDonation.location && selectedDonation.location.coordinates && (
+                  <Box mt={2}>
+                    <MapContainer center={[selectedDonation.location.coordinates[1], selectedDonation.location.coordinates[0]]} zoom={13} style={{ height: 200, width: '100%' }} scrollWheelZoom={false}>
+                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                      <Marker position={[selectedDonation.location.coordinates[1], selectedDonation.location.coordinates[0]]}>
+                        <Popup>Pickup Location</Popup>
+                      </Marker>
+                    </MapContainer>
+                  </Box>
                 )}
                 
                 <Text fontWeight="bold">Pickup Address:</Text>
-                <Box pl={4}>
+                <Box pl={4} mb={2}>
                   <Text>{selectedDonation.pickupAddress?.street}</Text>
                   <Text>
                     {selectedDonation.pickupAddress?.city}, 

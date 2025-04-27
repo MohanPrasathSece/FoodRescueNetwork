@@ -41,7 +41,7 @@ export default function VolunteerDashboard() {
   const fetchAvailableDonations = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/donations/available', {
+      const response = await axios.get('http://localhost:5000/api/donations?status=available', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAvailableDonations(response.data);
@@ -84,27 +84,23 @@ export default function VolunteerDashboard() {
   const confirmPickup = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5000/api/pickups`, {
-        donationId: selectedDonation._id
-      }, {
+      await axios.post(`http://localhost:5000/api/donations/${selectedDonation._id}/claim`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
       toast({
         title: 'Success',
-        description: 'Pickup request submitted successfully',
+        description: 'Donation claimed successfully',
         status: 'success',
         duration: 3000,
         isClosable: true,
       });
-
       onClose();
       fetchAvailableDonations();
       fetchMyPickups();
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to submit pickup request',
+        description: 'Failed to claim donation',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -121,25 +117,24 @@ export default function VolunteerDashboard() {
             {availableDonations.map((donation) => (
               <Card key={donation._id}>
                 <CardHeader>
-                  <Heading size="md">{donation.title}</Heading>
+                  <Heading size="md">{donation.foodName}</Heading>
                 </CardHeader>
                 <CardBody>
                   <Stack spacing={3}>
                     <Text>{donation.description}</Text>
-                    <Text><strong>Quantity:</strong> {donation.quantity}</Text>
-                    <Text><strong>Expiry Date:</strong> {new Date(donation.expiryDate).toLocaleDateString()}</Text>
-                    <Text><strong>Pickup Address:</strong> {donation.pickupAddress}</Text>
+                    <Text><strong>Quantity:</strong> {donation.quantity} {donation.unit}</Text>
+                    <Text><strong>Expiration Date:</strong> {new Date(donation.expirationDate).toLocaleDateString()}</Text>
+                    <Text><strong>Pickup Address:</strong> {donation.pickupAddress?.street}, {donation.pickupAddress?.city}, {donation.pickupAddress?.state} {donation.pickupAddress?.zipCode}</Text>
+                    {donation.imageUrl && <img src={donation.imageUrl} alt="Food" style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 8 }} />}
+                    {/* Map removed: displaying address only */}
                     <Badge colorScheme="green" alignSelf="start">
                       Available
                     </Badge>
                   </Stack>
                 </CardBody>
                 <CardFooter>
-                  <Button
-                    colorScheme="green"
-                    onClick={() => handlePickupRequest(donation)}
-                  >
-                    Request Pickup
+                  <Button colorScheme="green" onClick={() => handlePickupRequest(donation)}>
+                    Claim Donation
                   </Button>
                 </CardFooter>
               </Card>
@@ -153,13 +148,13 @@ export default function VolunteerDashboard() {
             {myPickups.map((pickup) => (
               <Card key={pickup._id}>
                 <CardHeader>
-                  <Heading size="md">{pickup.donation.title}</Heading>
+                  <Heading size="md">{pickup.donation.foodName}</Heading>
                 </CardHeader>
                 <CardBody>
                   <Stack spacing={3}>
                     <Text>{pickup.donation.description}</Text>
-                    <Text><strong>Quantity:</strong> {pickup.donation.quantity}</Text>
-                    <Text><strong>Pickup Address:</strong> {pickup.donation.pickupAddress}</Text>
+                    <Text><strong>Quantity:</strong> {pickup.donation.quantity} {pickup.donation.unit}</Text>
+                    <Text><strong>Pickup Address:</strong> {pickup.donation.pickupAddress?.street}, {pickup.donation.pickupAddress?.city}, {pickup.donation.pickupAddress?.state} {pickup.donation.pickupAddress?.zipCode}</Text>
                     <Badge
                       colorScheme={pickup.status === 'pending' ? 'yellow' : 'green'}
                       alignSelf="start"
@@ -180,12 +175,13 @@ export default function VolunteerDashboard() {
           <ModalHeader>Confirm Pickup Request</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Text>Are you sure you want to request pickup for this donation?</Text>
+            <Text>Are you sure you want to claim this donation?</Text>
             {selectedDonation && (
               <Box mt={4}>
-                <Text><strong>Title:</strong> {selectedDonation.title}</Text>
-                <Text><strong>Quantity:</strong> {selectedDonation.quantity}</Text>
-                <Text><strong>Address:</strong> {selectedDonation.pickupAddress}</Text>
+                <Text><strong>Food Name:</strong> {selectedDonation.foodName}</Text>
+                <Text><strong>Quantity:</strong> {selectedDonation.quantity} {selectedDonation.unit}</Text>
+                <Text><strong>Address:</strong> {selectedDonation.pickupAddress?.street}, {selectedDonation.pickupAddress?.city}, {selectedDonation.pickupAddress?.state} {selectedDonation.pickupAddress?.zipCode}</Text>
+                {/* Map removed: displaying address only */}
               </Box>
             )}
           </ModalBody>

@@ -107,3 +107,43 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 MIT License
+
+---
+
+## Project Title
+
+**Food Rescue Network – A Food Donation Web App**
+
+## Brief Explanation
+
+This project is a full-stack web application that aims to reduce food waste by connecting food donors (restaurants, events, individuals) with volunteers and NGOs who can pick up and distribute the food. The application allows donors to upload available food details (like food name, quantity, pickup time, address, photo), and volunteers to browse and claim donations. Admins can manage users and donations. The app includes a simple map integration to show pickup locations.
+
+**Tech stack:** MERN (MongoDB, Express.js, React.js, Node.js). Authentication is handled securely (JWT tokens). MongoDB stores user profiles, donation data, and claimed pickups. The frontend is built with React.js and is responsive. The backend is created with Node.js and Express.js with RESTful APIs. The admin dashboard allows user and donation management.
+
+### Main Features Checklist
+
+#### Donor
+- [x] Upload food donation (food name, description, quantity, pickup time, address, photo)
+- [ ] View/manage their own donations
+
+#### Volunteer
+- [x] Browse available donations
+- [ ] Claim a donation
+- [ ] View pickup location on map
+
+#### Admin
+- [ ] Manage users (delete/ban)
+- [ ] Manage donations (edit/delete)
+
+#### Authentication
+- [x] User signup/login with JWT-based authentication
+
+#### Additional
+- [ ] Email notifications (e.g., when donation is claimed)
+- [x] Mobile responsive frontend
+- [x] RESTful backend with Express.js
+- [x] MongoDB/Mongoose ODM
+- [x] Multer for file uploads (food images)
+- [ ] Google Maps/Leaflet.js for pickup locations
+
+---

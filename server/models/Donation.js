@@ -9,7 +9,7 @@ const donationSchema = new mongoose.Schema({
   foodType: {
     type: String,
     enum: ['produce', 'prepared', 'packaged'],
-    required: true
+    default: 'produce'
   },
   foodName: {
     type: String,
@@ -43,7 +43,7 @@ const donationSchema = new mongoose.Schema({
     },
     coordinates: {
       type: [Number], // [longitude, latitude]
-      required: true
+      default: [0, 0]
     }
   },
   pickupAddress: {

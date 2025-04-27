@@ -465,6 +465,26 @@ router.post('/:id/complete', auth, async (req, res) => {
   }
 });
 
+// Claim a donation
+router.patch('/:id/claim', auth, async (req, res) => {
+  try {
+    const donation = await Donation.findById(req.params.id);
+    if (!donation) {
+      return res.status(404).json({ message: 'Donation not found' });
+    }
+    if (donation.status !== 'available') {
+      return res.status(400).json({ message: 'Donation cannot be claimed' });
+    }
+    donation.status = 'claimed';
+    donation.claimedBy = req.user.id;
+    await donation.save();
+    res.json(donation);
+  } catch (error) {
+    console.error('Error claiming donation:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get user's donation history
 router.get('/user/history', auth, async (req, res) => {
   try {
