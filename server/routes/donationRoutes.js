@@ -117,6 +117,45 @@ router.get('/nearby', auth, async (req, res) => {
   }
 });
 
+// Get all available donations (public)
+router.get('/available', async (req, res) => {
+  try {
+    const donations = await Donation.find({ status: 'available' })
+      .populate('donor', 'name organization')
+      .sort({ createdAt: -1 });
+
+    // Convert image buffer to base64 URL
+    const formatted = donations.map(d => {
+      const obj = d.toObject();
+      if (obj.image && obj.image.data) {
+        const base64 = obj.image.data.toString('base64');
+        obj.imageUrl = `data:${obj.image.contentType};base64,${base64}`;
+        delete obj.image;
+      }
+      return obj;
+    });
+
+    res.json(formatted);
+  } catch (error) {
+    console.error('Error fetching available donations:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get donations by status (e.g., available)
+router.get('/status/:status', async (req, res) => {
+  try {
+    const { status } = req.params;
+    const donations = await Donation.find({ status })
+      .populate('donor', 'name organization')
+      .sort({ createdAt: -1 });
+    res.json(donations);
+  } catch (error) {
+    console.error('Error fetching donations by status:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get a single donation by ID
 router.get('/:id', async (req, res) => {
   try {
@@ -166,10 +205,17 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
       location
     } = req.body;
     
-    // Parse JSON strings if needed
-    const parsedPickupAddress = typeof pickupAddress === 'string' 
-      ? JSON.parse(pickupAddress) 
-      : pickupAddress;
+    let parsedPickupAddress = pickupAddress;
+    if (!parsedPickupAddress) {
+      parsedPickupAddress = {
+        street: req.body['pickupAddress[street]'],
+        city: req.body['pickupAddress[city]'],
+        state: req.body['pickupAddress[state]'],
+        zipCode: req.body['pickupAddress[zipCode]']
+      };
+    } else if (typeof parsedPickupAddress === 'string') {
+      try { parsedPickupAddress = JSON.parse(parsedPickupAddress); } catch {}
+    }
     
     const parsedLocation = typeof location === 'string'
       ? JSON.parse(location)
@@ -242,13 +288,21 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
     
     const updateData = req.body;
     
-    // Parse JSON fields if needed
-    if (updateData.pickupAddress && typeof updateData.pickupAddress === 'string') {
-      updateData.pickupAddress = JSON.parse(updateData.pickupAddress);
+    // Handle nested FormData pickupAddress fields
+    if (!updateData.pickupAddress) {
+      updateData.pickupAddress = {
+        street: req.body['pickupAddress[street]'],
+        city: req.body['pickupAddress[city]'],
+        state: req.body['pickupAddress[state]'],
+        zipCode: req.body['pickupAddress[zipCode]']
+      };
+    } else if (typeof updateData.pickupAddress === 'string') {
+      try { updateData.pickupAddress = JSON.parse(updateData.pickupAddress); } catch {}
     }
     
-    if (updateData.location && typeof updateData.location === 'string') {
-      updateData.location = JSON.parse(updateData.location);
+    // Parse expirationDate string
+    if (updateData.expirationDate) {
+      updateData.expirationDate = new Date(updateData.expirationDate);
     }
     
     // Update image if provided
@@ -482,6 +536,18 @@ router.patch('/:id/claim', auth, async (req, res) => {
   } catch (error) {
     console.error('Error claiming donation:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get donor's donations
+router.get('/my-donations', auth, async (req, res) => {
+  try {
+    const donations = await Donation.find({ donor: req.user.id })
+      .populate('claimedBy', 'name')
+      .sort({ createdAt: -1 });
+    res.json(donations);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching your donations', error: error.message });
   }
 });
 

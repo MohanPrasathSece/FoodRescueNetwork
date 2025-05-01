@@ -52,14 +52,15 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Get all available donations
-router.get('/available', auth, async (req, res) => {
+// Get all available donations (public, no auth)
+router.get('/available', async (req, res) => {
   try {
     const donations = await Donation.find({ status: 'available' })
       .populate('donor', 'name organization')
       .sort({ createdAt: -1 });
     res.json(donations);
   } catch (error) {
+    console.error('Error fetching donations:', error);
     res.status(500).json({ message: 'Error fetching donations', error: error.message });
   }
 });
@@ -115,26 +116,6 @@ router.patch('/:id', auth, authorize('donor'), async (req, res) => {
 });
 
 // Claim a donation
-router.patch('/:id/claim', auth, async (req, res) => {
-  try {
-    const donation = await Donation.findById(req.params.id);
-    if (!donation) {
-      return res.status(404).json({ message: 'Donation not found' });
-    }
-    if (donation.status !== 'available') {
-      return res.status(400).json({ message: 'Donation cannot be claimed' });
-    }
-    donation.status = 'claimed';
-    donation.claimedBy = req.user.id;
-    await donation.save();
-    res.json(donation);
-  } catch (error) {
-    console.error('Error claiming donation:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Claim donation
 router.post('/:id/claim', auth, authorize('volunteer'), async (req, res) => {
   try {
     const donation = await Donation.findById(req.params.id).populate('donor', 'name email');
@@ -213,6 +194,24 @@ router.post('/:id/complete', auth, authorize('volunteer'), async (req, res) => {
     res.json({ donation, pickup });
   } catch (error) {
     res.status(400).json({ message: 'Error completing pickup', error: error.message });
+  }
+});
+
+// Delete donation by donor
+router.delete('/:id', auth, authorize('donor'), async (req, res) => {
+  try {
+    const donation = await Donation.findOne({ _id: req.params.id, donor: req.user._id });
+    if (!donation) {
+      return res.status(404).json({ message: 'Donation not found' });
+    }
+    if (donation.status !== 'available') {
+      return res.status(400).json({ message: 'Cannot delete claimed or completed donation' });
+    }
+    await donation.remove();
+    res.json({ message: 'Donation deleted' });
+  } catch (error) {
+    console.error('Error deleting donation:', error);
+    res.status(500).json({ message: 'Error deleting donation', error: error.message });
   }
 });
 

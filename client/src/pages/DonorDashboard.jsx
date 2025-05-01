@@ -106,7 +106,7 @@ export default function DonorDashboard() {
       form.append('pickupAddress[zipCode]', formData.pickupAddress.zipCode);
       if (formData.image) form.append('image', formData.image);
       if (editingDonation) {
-        await axios.patch(`http://localhost:5000/api/donations/${editingDonation._id}`, form, {
+        await axios.put(`http://localhost:5000/api/donations/${editingDonation._id}`, form, {
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
         });
         toast({ title: 'Success', description: 'Donation updated.', status: 'success', duration: 3000, isClosable: true });
@@ -124,7 +124,8 @@ export default function DonorDashboard() {
       });
       setEditingDonation(null);
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to save donation', status: 'error', duration: 3000, isClosable: true });
+      console.error('Save donation error:', error.response?.data?.message || error.message);
+      toast({ title: 'Error', description: error.response?.data?.message || 'Failed to save donation', status: 'error', duration: 5000, isClosable: true });
     }
   };
 
@@ -176,7 +177,11 @@ export default function DonorDashboard() {
               <Stack spacing={3}>
                 <Text>{donation.description}</Text>
                 <Text><strong>Quantity:</strong> {donation.quantity} {donation.unit}</Text>
-                <Text><strong>Expiration Date:</strong> {new Date(donation.expirationDate).toLocaleDateString()}</Text>
+                {(() => {
+                  const exp = new Date(donation.expirationDate);
+                  const hrs = Math.max(Math.ceil((exp - new Date()) / (1000*60*60)), 0);
+                  return <Text><strong>Expires in:</strong> {hrs} hrs</Text>;
+                })()}
                 <Text><strong>Pickup Address:</strong> {donation.pickupAddress?.street}, {donation.pickupAddress?.city}, {donation.pickupAddress?.state} {donation.pickupAddress?.zipCode}</Text>
                 {donation.imageUrl && <img src={donation.imageUrl} alt="Food" style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 8 }} />}
                 <Badge colorScheme={donation.status === 'available' ? 'green' : 'orange'} alignSelf="start">

@@ -46,15 +46,17 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 // Import routes
 const authRoutes = require('./routes/auth');
-const donationRoutes = require('./routes/donations');
+const donationRoutes = require('./routes/donationRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const pickupRoutes = require('./routes/pickupRoutes');
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/donations', donationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/pickups', pickupRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Food Rescue Hub API' });

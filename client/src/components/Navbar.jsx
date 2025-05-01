@@ -12,12 +12,17 @@ import {
   MenuList,
   MenuItem,
   Avatar,
-  useColorModeValue
+  useColorModeValue,
+  useColorMode,
+  IconButton
 } from '@chakra-ui/react';
+// Use react-icons for theme icons
+import { FaMoon, FaSun } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { colorMode, toggleColorMode } = useColorMode();
   const navigate = useNavigate();
   const bgColor = useColorModeValue('white', 'gray.800');
 
@@ -36,7 +41,13 @@ const Navbar = () => {
         </Link>
 
         <Flex alignItems='center'>
-          <Stack direction='row' spacing={4}>
+          <Stack direction='row' spacing={4} alignItems='center'>
+            <IconButton
+              aria-label='Toggle theme'
+              icon={colorMode === 'light' ? <FaMoon /> : <FaSun />}
+              variant='ghost'
+              onClick={toggleColorMode}
+            />
             {!user ? (
               <>
                 <Button
@@ -67,16 +78,7 @@ const Navbar = () => {
                     Donate Food
                   </Button>
                 )}
-                {user.role === 'volunteer' && (
-                  <Button
-                    as={RouterLink}
-                    to='/volunteer/dashboard'
-                    variant='ghost'
-                    colorScheme='green'
-                  >
-                    I Need Food
-                  </Button>
-                )}
+                {/* Volunteer has no top button, dashboard in menu */}
                 <Menu>
                   <MenuButton
                     as={Button}
@@ -93,6 +95,8 @@ const Navbar = () => {
                     >
                       Dashboard
                     </MenuItem>
+                    <MenuItem as={RouterLink} to='/profile'>Profile Settings</MenuItem>
+                    <MenuItem as={RouterLink} to='/help'>Help</MenuItem>
                     <MenuItem onClick={handleLogout}>
                       Logout
                     </MenuItem>
