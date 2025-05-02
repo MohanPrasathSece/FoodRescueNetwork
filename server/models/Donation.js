@@ -58,6 +58,18 @@ const donationSchema = new mongoose.Schema({
     enum: ['available', 'claimed', 'completed', 'expired'],
     default: 'available'
   },
+  claimedAt: {
+    type: Date,
+    default: null
+  },
+  completedAt: {
+    type: Date,
+    default: null
+  },
+  expiredAt: {
+    type: Date,
+    default: null
+  },
   claimedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

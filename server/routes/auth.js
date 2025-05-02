@@ -4,6 +4,15 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
+
+// Avatar storage config
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, path.join(__dirname, '../uploads/avatars')),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+});
+const avatarUpload = multer({ storage: avatarStorage, limits: { fileSize: 2 * 1024 * 1024 } });
 
 // Register new user
 router.post('/register', async (req, res) => {
@@ -152,18 +161,34 @@ router.get('/profile', auth, async (req, res) => {
   }
 });
 
-// Update user profile
-router.patch('/profile', auth, async (req, res) => {
+// Update user profile (with optional avatar upload)
+router.patch('/profile', auth, avatarUpload.single('avatar'), async (req, res) => {
   const updates = Object.keys(req.body);
-  const allowedUpdates = ['name', 'organization', 'phone', 'address'];
-  const isValidOperation = updates.every(update => allowedUpdates.includes(update));
+  const allowedUpdates = ['name', 'email', 'phone', 'avatar', 'organization', 'address'];
+  // Allow nested address fields like address[street]
+  const isValidOperation = updates.every(update => allowedUpdates.includes(update) || update.startsWith('address['));
 
   if (!isValidOperation) {
     return res.status(400).json({ message: 'Invalid updates' });
   }
 
   try {
-    updates.forEach(update => req.user[update] = req.body[update]);
+    // handle avatar file
+    if (req.file) {
+      req.user.avatar = '/uploads/avatars/' + req.file.filename;
+    }
+    // Handle nested address fields
+    updates.filter(u => u.startsWith('address[')).forEach(key => {
+      const field = key.match(/address\[(.+)\]/)[1];
+      req.user.address = req.user.address || {};
+      req.user.address[field] = req.body[key];
+    });
+    // Handle other fields
+    updates.filter(u => !u.startsWith('address[')).forEach(update => {
+      if (update !== 'address') {
+        req.user[update] = req.body[update];
+      }
+    });
     await req.user.save();
     res.json(req.user);
   } catch (error) {

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { auth } = require('../middleware/auth');
+const { auth, authorize } = require('../middleware/auth');
 const Donation = require('../models/Donation');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
@@ -152,6 +152,50 @@ router.get('/status/:status', async (req, res) => {
     res.json(donations);
   } catch (error) {
     console.error('Error fetching donations by status:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get donations created by the authenticated donor
+router.get('/my-donations', auth, async (req, res) => {
+  try {
+    const donations = await Donation.find({ donor: req.user._id })
+      .populate('donor', 'name organization')
+      .sort({ createdAt: -1 });
+    const formatted = donations.map(d => {
+      const obj = d.toObject();
+      if (obj.image && obj.image.data) {
+        const b64 = d.image.data.toString('base64');
+        obj.imageUrl = `data:${d.image.contentType};base64,${b64}`;
+        delete obj.image;
+      }
+      return obj;
+    });
+    res.json(formatted);
+  } catch (err) {
+    console.error('Error fetching my donations:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get claimed and expired donations for authenticated volunteer
+router.get('/history', auth, async (req, res) => {
+  try {
+    const donations = await Donation.find({ claimedBy: req.user.id, status: { $in: ['claimed','expired'] } })
+      .populate('donor', 'name organization')
+      .populate('claimedBy', 'name');
+    const formatted = donations.map(d => {
+      const obj = d.toObject();
+      if (obj.image && obj.image.data) {
+        const base64 = obj.image.data.toString('base64');
+        obj.imageUrl = `data:${obj.image.contentType};base64,${base64}`;
+        delete obj.image;
+      }
+      return obj;
+    });
+    res.json(formatted);
+  } catch (error) {
+    console.error('Error fetching volunteer history:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -519,6 +563,30 @@ router.post('/:id/complete', auth, async (req, res) => {
   }
 });
 
+// Mark donation as delivered (completed)
+router.patch('/:id/delivered', auth, async (req, res) => {
+  try {
+    const donation = await Donation.findById(req.params.id);
+    if (!donation) {
+      return res.status(404).json({ message: 'Donation not found' });
+    }
+    // Only volunteer who claimed or admin can mark as delivered
+    if ((donation.claimedBy?.toString() !== req.user.id && req.user.role !== 'admin')) {
+      return res.status(403).json({ message: 'Not authorized to mark as delivered' });
+    }
+    if (donation.status !== 'claimed') {
+      return res.status(400).json({ message: 'Only claimed donations can be marked as delivered' });
+    }
+    donation.status = 'completed';
+    donation.completedAt = new Date();
+    await donation.save();
+    res.json({ message: 'Donation marked as delivered' });
+  } catch (error) {
+    console.error('Error marking donation as delivered:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Claim a donation
 router.patch('/:id/claim', auth, async (req, res) => {
   try {
@@ -563,7 +631,7 @@ router.get('/user/history', auth, async (req, res) => {
         .populate('claimedBy', 'name organization')
         .sort({ createdAt: -1 });
     } else if (req.user.role === 'volunteer') {
-      // For volunteers, get donations they've claimed
+      // For volunteers, get donations they claimed (including completed/expired)
       donations = await Donation.find({ claimedBy: userId })
         .populate('donor', 'name organization')
         .sort({ createdAt: -1 });
@@ -589,6 +657,31 @@ router.get('/user/history', auth, async (req, res) => {
     res.json(donationsWithImageUrls);
   } catch (error) {
     console.error('Error fetching donation history:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Mark donation as expired (not delivered)
+router.patch('/:id/expired', auth, async (req, res) => {
+  try {
+    console.log('Expired endpoint hit for donation id:', req.params.id);
+    const donation = await Donation.findById(req.params.id);
+    if (!donation) {
+      return res.status(404).json({ message: 'Donation not found' });
+    }
+    // Only volunteer who claimed or admin can mark as expired
+    if ((donation.claimedBy?.toString() !== req.user.id && req.user.role !== 'admin')) {
+      return res.status(403).json({ message: 'Not authorized to mark as expired' });
+    }
+    if (donation.status !== 'claimed') {
+      return res.status(400).json({ message: 'Only claimed donations can be marked as expired' });
+    }
+    donation.status = 'expired';
+    donation.expiredAt = new Date();
+    await donation.save();
+    res.json({ message: 'Donation marked as expired' });
+  } catch (error) {
+    console.error('Error marking donation as expired:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

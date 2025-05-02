@@ -35,7 +35,7 @@ const Navbar = () => {
     <Box bg={bgColor} px={4} boxShadow='sm'>
       <Flex h={16} alignItems='center' justifyContent='space-between'>
         <Link as={RouterLink} to='/' _hover={{ textDecoration: 'none' }}>
-          <Text fontSize='xl' fontWeight='bold' color='green.500'>
+          <Text fontSize='2xl' fontWeight='extrabold' color='brand.500'>
             Food Rescue Network
           </Text>
         </Link>
@@ -50,58 +50,20 @@ const Navbar = () => {
             />
             {!user ? (
               <>
-                <Button
-                  as={RouterLink}
-                  to='/login'
-                  variant='ghost'
-                  colorScheme='green'
-                >
-                  Login
-                </Button>
-                <Button
-                  as={RouterLink}
-                  to='/register'
-                  colorScheme='green'
-                >
-                  Register
-                </Button>
+                <Button as={RouterLink} to='/login' variant='ghost' colorScheme='brand'>Login</Button>
+                <Button as={RouterLink} to='/register' colorScheme='brand'>Register</Button>
               </>
             ) : (
               <>
-                {user.role === 'donor' && (
-                  <Button
-                    as={RouterLink}
-                    to='/donor/dashboard'
-                    variant='ghost'
-                    colorScheme='green'
-                  >
-                    Donate Food
-                  </Button>
-                )}
-                {/* Volunteer has no top button, dashboard in menu */}
-                <Menu>
-                  <MenuButton
-                    as={Button}
-                    variant='ghost'
-                    colorScheme='green'
-                    rightIcon={<Avatar size='xs' name={user.name || user.email} />}
-                  >
-                    Profile
-                  </MenuButton>
-                  <MenuList>
-                    <MenuItem
-                      as={RouterLink}
-                      to={`/${user.role}/dashboard`}
-                    >
-                      Dashboard
-                    </MenuItem>
-                    <MenuItem as={RouterLink} to='/profile'>Profile Settings</MenuItem>
-                    <MenuItem as={RouterLink} to='/help'>Help</MenuItem>
-                    <MenuItem onClick={handleLogout}>
-                      Logout
-                    </MenuItem>
-                  </MenuList>
-                </Menu>
+                <Stack direction='row' spacing={4} alignItems='center'>
+                  {/* Home link to landing page */}
+                  <Button as={RouterLink} to='/' variant='ghost'>Home</Button>
+                  <Button as={RouterLink} to={`/${user.role}/dashboard`} variant='ghost'>Available Donations</Button>
+                  <Button as={RouterLink} to='/history' variant='ghost'>History</Button>
+                  <Button as={RouterLink} to='/profile' variant='ghost'>Profile</Button>
+                  <Button as={RouterLink} to='/help' variant='ghost'>Help</Button>
+                  <Button onClick={handleLogout} variant='ghost'>Logout</Button>
+                </Stack>
               </>
             )}
           </Stack>

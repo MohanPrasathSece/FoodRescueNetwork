@@ -24,12 +24,23 @@ import {
   useDisclosure,
   Link,
   Image,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
 
+// set base URL for axios after imports
+axios.defaults.baseURL = 'http://localhost:5000';
+
 export default function VolunteerDashboard() {
+  // color mode values
+  const pageBg = useColorModeValue('gray.50','gray.800');
+  const containerBg = useColorModeValue('white','gray.700');
+  const cardBg = useColorModeValue('white','gray.600');
+  const textColor = useColorModeValue('gray.800','whiteAlpha.900');
+  const historySectionBg = useColorModeValue('gray.100','gray.700');
+  const historyCardBg = useColorModeValue('white','gray.600');
   const [availableDonations, setAvailableDonations] = useState([]);
-  const [myPickups, setMyPickups] = useState([]);
+  const [historyDonations, setHistoryDonations] = useState([]);
   const [selectedDonation, setSelectedDonation] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { user } = useAuth();
@@ -37,13 +48,15 @@ export default function VolunteerDashboard() {
 
   useEffect(() => {
     fetchAvailableDonations();
-    fetchMyPickups();
+    fetchHistoryDonations();
   }, []);
 
   const fetchAvailableDonations = async () => {
     try {
-      // Use the public, auth-free route for available donations
-      const response = await axios.get('http://localhost:5000/api/donations/available');
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/donations/available', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setAvailableDonations(response.data);
     } catch (error) {
       console.error('Error fetching available donations:', error);
@@ -57,27 +70,14 @@ export default function VolunteerDashboard() {
     }
   };
 
-  const fetchMyPickups = async () => {
+  const fetchHistoryDonations = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/pickups/my-pickups', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setMyPickups(response.data);
+      const response = await axios.get('/api/donations/user/history', { headers: { Authorization: `Bearer ${token}` }});
+      setHistoryDonations(response.data);
     } catch (error) {
-      // If route not found, assume no pickups yet
-      if (error.response?.status === 404) {
-        setMyPickups([]);
-        return;
-      }
-      console.error('Error fetching my pickups:', error.response?.data?.message || error.message);
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to fetch your pickups',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      console.error('Error fetching donation history:', error.response?.data?.message || error.message);
+      toast({ title: 'Error', description: error.response?.data?.message || 'Failed to fetch donation history', status: 'error', duration: 3000, isClosable: true });
     }
   };
 
@@ -91,7 +91,7 @@ export default function VolunteerDashboard() {
       const token = localStorage.getItem('token');
       const pickupTime = new Date().toISOString();
       await axios.patch(
-        `http://localhost:5000/api/donations/${selectedDonation._id}/claim`,
+        `/api/donations/${selectedDonation._id}/claim`,
         { pickupTime },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -104,7 +104,7 @@ export default function VolunteerDashboard() {
       });
       onClose();
       fetchAvailableDonations();
-      fetchMyPickups();
+      fetchHistoryDonations();
     } catch (error) {
       console.error('Error claiming donation:', error.response?.data?.message || error.message);
       toast({
@@ -122,156 +122,158 @@ export default function VolunteerDashboard() {
     try {
       const token = localStorage.getItem('token');
       await axios.patch(
-        `http://localhost:5000/api/pickups/${pickupId}/complete`,
+        `/api/pickups/${pickupId}/complete`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast({ title: 'Success', description: 'Pickup completed', status: 'success', duration: 3000, isClosable: true });
-      fetchMyPickups();
+      fetchHistoryDonations();
     } catch (error) {
       toast({ title: 'Error', description: error.response?.data?.message || 'Failed to pick up donation', status: 'error', duration: 3000, isClosable: true });
     }
   };
 
-  // Determine history pickups (claimed/completed, cancelled, or expired)
-  const now = new Date();
-  const historyPickups = myPickups.filter(
-    p => new Date(p.donation.expirationDate) <= now || ['completed', 'cancelled'].includes(p.status)
-  );
+  // Add delivered handler
+  const handleDelivered = async (donationId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`/api/donations/${donationId}/delivered`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast({ title: 'Delivered', description: 'Donation marked as delivered.', status: 'success', duration: 3000, isClosable: true });
+      fetchAvailableDonations();
+      fetchHistoryDonations();
+    } catch (error) {
+      toast({ title: 'Error', description: error.response?.data?.message || 'Failed to mark as delivered', status: 'error', duration: 3000, isClosable: true });
+    }
+  };
+
+  // Add not delivered handler
+  const handleNotDelivered = async (donationId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`/api/donations/${donationId}/expired`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast({ title: 'Expired', description: 'Donation marked as not delivered (expired).', status: 'warning', duration: 3000, isClosable: true });
+      fetchAvailableDonations();
+      fetchHistoryDonations();
+    } catch (error) {
+      toast({ title: 'Error', description: error.response?.data?.message || 'Failed to mark as expired', status: 'error', duration: 3000, isClosable: true });
+    }
+  };
 
   return (
-    <Box bg="gray.100" minH="100vh" py={10}>
-      <Container maxW="container.lg" bg="white" p={6} borderRadius="md" boxShadow="lg">
+    <Box
+      py={10}
+      bgImage={`linear-gradient(rgba(255,255,255,0.75),rgba(255,255,255,0.75)), url('https://1.bp.blogspot.com/-hGztsaeIFhY/Wi046IYRhwI/AAAAAAAAAJ0/fkZLk1ZSqCcBYLbaWy8WUGzrLlOlOXFgQCPcBGAYYCw/s1600/DSC_0097.JPG')`}
+      bgBlendMode="overlay"
+      bgSize="cover"
+      bgPosition="center"
+      color={textColor}
+      minH="100vh"
+    >
+      <Container maxW="6xl" bg={containerBg} p={6} rounded="xl" boxShadow="2xl">
         <Stack spacing={8}>
-          <Box bg="white" p={4} borderRadius="md" boxShadow="sm">
+          {/* Available Donations */}
+          <Box bg={cardBg} p={4} borderRadius="md" boxShadow="sm">
             <Heading size="lg" mb={5}>Available Donations</Heading>
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={10}>
-              {availableDonations.map((donation) => (
-                <Card key={donation._id} borderRadius="md" boxShadow="md" _hover={{ boxShadow: 'xl', transform: 'translateY(-2px)' }} transition="0.2s">
-                  <CardHeader>
-                    <Heading size="md">{donation.foodName}</Heading>
-                  </CardHeader>
-                  <CardBody>
-                    <Stack spacing={3}>
-                      <Text>{donation.description}</Text>
-                      <Text><strong>Quantity:</strong> {donation.quantity} {donation.unit}</Text>
-                      {(() => {
-                        const exp = new Date(donation.expirationDate);
-                        const hrs = Math.max(Math.ceil((exp - new Date()) / (1000*60*60)), 0);
-                        return <Text><strong>Expires in:</strong> {hrs} hrs</Text>;
-                      })()}
-                      <Text fontSize="sm" color="gray.600"><strong>Expires On:</strong> {new Date(donation.expirationDate).toLocaleDateString()}</Text>
-                      <Text><strong>Pickup Address:</strong> {donation.pickupAddress?.street}, {donation.pickupAddress?.city}, {donation.pickupAddress?.state} {donation.pickupAddress?.zipCode}</Text>
-                      {donation.pickupAddress && (() => {
-                        const addr = `${donation.pickupAddress.street}, ${donation.pickupAddress.city}, ${donation.pickupAddress.state} ${donation.pickupAddress.zipCode}`;
-                        const mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(addr)}`;
-                        return (
-                          <Link href={mapUrl} isExternal _hover={{ textDecoration: 'none' }}>
-                            <Box cursor="pointer" mt="1rem">
-                              <iframe
-                                title="pickup-location"
-                                src={`${mapUrl}&hl=en&z=15&output=embed`}
-                                width="100%"
-                                height="200"
-                                style={{ border: 0 }}
-                                loading="lazy"
-                              />
-                            </Box>
-                          </Link>
-                        );
-                      })()}
-                      {donation.imageUrl && <img src={donation.imageUrl} alt="Food" style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 8 }} />}
-                      <Badge colorScheme="green" alignSelf="start">
-                        Available
-                      </Badge>
-                    </Stack>
-                  </CardBody>
-                  <CardFooter>
-                    <Button colorScheme="green" onClick={() => handlePickupRequest(donation)}>
-                      Claim Donation
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </SimpleGrid>
-            {availableDonations.length === 0 && <Text>No donations available at the moment</Text>}
+            {availableDonations.length > 0 ? (
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
+                {availableDonations.filter(d => d.status !== 'claimed').map((donation) => (
+                  <Card key={donation._id} p={4} boxShadow="md" _hover={{ transform: 'translateY(-4px)' }} transition="0.2s">
+                    <CardHeader><Heading size="sm">{donation.foodName}</Heading></CardHeader>
+                    <CardBody>
+                      <Image src={`http://localhost:5000${donation.imageUrl}`} alt={donation.foodName} boxSize="150px" objectFit="cover" mb={3} />
+                      <Box p={3}>
+                        <Text fontSize="sm" noOfLines={2}>{donation.description}</Text>
+                      </Box>
+                      <Box height="200px" mb={4}>
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          style={{ border: 0 }}
+                          loading="lazy"
+                          allowFullScreen
+                          src={`https://www.google.com/maps?q=${encodeURIComponent(`${donation.pickupAddress.street}, ${donation.pickupAddress.city}, ${donation.pickupAddress.state} ${donation.pickupAddress.zipCode}`)}&output=embed`}
+                        />
+                      </Box>
+                      <Text fontSize="sm" color="gray.700"><strong>Expires On:</strong> {new Date(donation.expirationDate).toLocaleString()}</Text>
+                      <Text fontSize="sm" color="gray.700"><strong>Pickup Address:</strong> {donation.pickupAddress?.street}, {donation.pickupAddress?.city}, {donation.pickupAddress?.state} {donation.pickupAddress?.zipCode}</Text>
+                    </CardBody>
+                    <CardFooter>
+                      <Button colorScheme="blue" onClick={() => handlePickupRequest(donation)}>Claim</Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </SimpleGrid>
+            ) : (
+              <Text>No donations available at the moment. Please check back soon.</Text>
+            )}
           </Box>
 
-          {/* History Sections */}
-          <Box mt={8} p={4} borderRadius="md" boxShadow="sm" bg="gray.50">
-            <Heading size="lg" mb={4} color="gray.600">Pickup History</Heading>
-            {/* Picked Up */}
-            <Box mb={6} p={4} bg="green.100" borderRadius="md">
-              <Heading size="md" mb={3} color="green.700">Picked Up</Heading>
-              {historyPickups.filter(p => p.status === 'completed').length > 0 ? (
-                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
-                  {historyPickups.filter(p => p.status === 'completed').map(p => {
-                    const d = p.donation;
-                    const date = new Date(p.updatedAt).toLocaleDateString();
-                    return (
-                      <Card key={p._id} p={4} boxShadow="md" _hover={{ transform: 'translateY(-4px)' }} transition="0.2s">
-                        <CardHeader><Heading size="sm">{d.foodName}</Heading></CardHeader>
-                        <CardBody>
-                          <Image src={d.imageUrl} alt={d.foodName} boxSize="150px" objectFit="cover" mb={3} />
-                          <Text mb={2}>{d.description}</Text>
-                          <Text fontSize="sm" color="gray.700"><strong>Picked Up On:</strong> {date}</Text>
-                        </CardBody>
-                      </Card>
-                    );
-                  })}
-                </SimpleGrid>
-              ) : <Text color="gray.600">No pickups completed yet.</Text>}
+          {/* Claimed by Me */}
+          {historyDonations.filter(d => d.status === 'claimed').length > 0 && (
+            <Box bg="green.50" p={4} borderRadius="md" boxShadow="sm">
+              <Heading size="md" mb={4} color="green.700">Pending Delivery</Heading>
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
+                {historyDonations.filter(d => d.status === 'claimed').map((donation) => (
+                  <Card key={donation._id} p={4} boxShadow="md" _hover={{ transform: 'translateY(-4px)' }} transition="0.2s">
+                    <CardHeader><Heading size="sm">{donation.foodName}</Heading></CardHeader>
+                    <CardBody>
+                      <Image src={`http://localhost:5000${donation.imageUrl}`} alt={donation.foodName} boxSize="150px" objectFit="cover" mb={3} />
+                      <Box p={3}>
+                        <Text fontSize="sm" noOfLines={2}>{donation.description}</Text>
+                      </Box>
+                      <Box height="200px" mb={4}>
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          style={{ border: 0 }}
+                          loading="lazy"
+                          allowFullScreen
+                          src={`https://www.google.com/maps?q=${encodeURIComponent(`${donation.pickupAddress.street}, ${donation.pickupAddress.city}, ${donation.pickupAddress.state} ${donation.pickupAddress.zipCode}`)}&output=embed`}
+                        />
+                      </Box>
+                      <Text fontSize="sm" color="gray.700"><strong>Expires On:</strong> {new Date(donation.expirationDate).toLocaleString()}</Text>
+                      <Text fontSize="sm" color="gray.700"><strong>Pickup Address:</strong> {donation.pickupAddress?.street}, {donation.pickupAddress?.city}, {donation.pickupAddress?.state} {donation.pickupAddress?.zipCode}</Text>
+                    </CardBody>
+                    <CardFooter>
+                      <Button colorScheme="green" mr={2} onClick={() => handleDelivered(donation._id)}>Delivered</Button>
+                      <Button colorScheme="red" variant="outline" onClick={() => handleNotDelivered(donation._id)}>Not Delivered</Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </SimpleGrid>
             </Box>
-            {/* Expired */}
-            <Box p={4} bg="red.100" borderRadius="md">
-              <Heading size="md" mb={3} color="red.700">Expired</Heading>
-              {historyPickups.filter(p => p.status !== 'completed').length > 0 ? (
-                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
-                  {historyPickups.filter(p => p.status !== 'completed').map(p => {
-                    const d = p.donation;
-                    const date = new Date(d.expirationDate).toLocaleDateString();
-                    return (
-                      <Card key={p._id} p={4} boxShadow="md" _hover={{ transform: 'translateY(-4px)' }} transition="0.2s">
-                        <CardHeader><Heading size="sm">{d.foodName}</Heading></CardHeader>
-                        <CardBody>
-                          <Image src={d.imageUrl} alt={d.foodName} boxSize="150px" objectFit="cover" mb={3} />
-                          <Text mb={2}>{d.description}</Text>
-                          <Text fontSize="sm" color="gray.700"><strong>Expired On:</strong> {date}</Text>
-                        </CardBody>
-                      </Card>
-                    );
-                  })}
-                </SimpleGrid>
-              ) : <Text color="gray.600">No expired pickups.</Text>}
-            </Box>
-          </Box>
-
-          <Modal isOpen={isOpen} onClose={onClose}>
-            <ModalOverlay />
-            <ModalContent>
-              <ModalHeader>Confirm Pickup Request</ModalHeader>
-              <ModalCloseButton />
-              <ModalBody>
-                <Text>Are you sure you want to claim this donation?</Text>
-                {selectedDonation && (
-                  <Box mt={4}>
-                    <Text><strong>Food Name:</strong> {selectedDonation.foodName}</Text>
-                    <Text><strong>Quantity:</strong> {selectedDonation.quantity} {selectedDonation.unit}</Text>
-                    <Text><strong>Address:</strong> {selectedDonation.pickupAddress?.street}, {selectedDonation.pickupAddress?.city}, {selectedDonation.pickupAddress?.state} {selectedDonation.pickupAddress?.zipCode}</Text>
-                    {/* Map removed: displaying address only */}
-                  </Box>
-                )}
-              </ModalBody>
-              <ModalFooter>
-                <Button colorScheme="green" mr={3} onClick={confirmPickup}>
-                  Confirm
-                </Button>
-                <Button variant="ghost" onClick={onClose}>Cancel</Button>
-              </ModalFooter>
-            </ModalContent>
-          </Modal>
+          )}
         </Stack>
       </Container>
+
+      {/* Claim Confirmation Modal */}
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Confirm Pickup Request</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text>Are you sure you want to claim this donation?</Text>
+            {selectedDonation && (
+              <Box mt={4}>
+                <Text><strong>Food Name:</strong> {selectedDonation.foodName}</Text>
+                <Text><strong>Quantity:</strong> {selectedDonation.quantity} {selectedDonation.unit}</Text>
+                <Text><strong>Address:</strong> {selectedDonation.pickupAddress?.street}, {selectedDonation.pickupAddress?.city}, {selectedDonation.pickupAddress?.state} {selectedDonation.pickupAddress?.zipCode}</Text>
+              </Box>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="green" mr={3} onClick={confirmPickup}>
+              Confirm
+            </Button>
+            <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }

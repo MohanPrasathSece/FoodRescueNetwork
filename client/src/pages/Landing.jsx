@@ -15,20 +15,17 @@ import {
   Divider,
 } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
+import Footer from '../components/Footer';
 
 export default function Landing() {
   const { user, loading } = useAuth();
-  const bgGradient = useColorModeValue(
-    'linear(to-b, green.50, white)',
-    'linear(to-b, gray.900, gray.800)'
-  );
   const cardBg = useColorModeValue('white', 'gray.700');
 
   if (loading) return null;
-  if (user) return <Navigate to={`/${user.role}/dashboard`} replace />;
+  if (user) return <Navigate to="/home" replace />;
 
   return (
-    <Box bgGradient={bgGradient} minH="100vh">
+    <Box bg="green.50" minH="100vh">
       <Container maxW={'6xl'} pt={10}>
         <Flex justifyContent="flex-end" mb={4}></Flex>
         
@@ -66,7 +63,14 @@ export default function Landing() {
               I want to:
             </Heading>
             
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 5, md: 8 }} width="100%" maxW="2xl">
+            {/* Removed banner per request */}
+            <SimpleGrid
+              columns={{ base: 1, md: 2 }}
+              spacing={{ base: 5, md: 8 }}
+              maxW="2xl"
+              mx="auto"
+              justifyItems="center"
+            >
               <VStack 
                 spacing={4} 
                 p={6} 
@@ -76,7 +80,7 @@ export default function Landing() {
                 _hover={{ transform: 'translateY(-5px)', transition: '0.3s' }}
               >
                 <Image 
-                  src="/donate-icon.png" 
+                  src="https://media.istockphoto.com/vectors/illustration-icon-with-the-concept-of-food-donation-vector-id951697932?k=6&m=951697932&s=170667a&w=0&h=jJSQTVE9Aao4O0QfKvE-iz6fR02AeCrDIv4NVRU1zvo="
                   alt="Donate Food" 
                   boxSize="100px"
                 />
@@ -106,7 +110,7 @@ export default function Landing() {
                 _hover={{ transform: 'translateY(-5px)', transition: '0.3s' }}
               >
                 <Image 
-                  src="/receive-icon.png" 
+                  src="https://img.freepik.com/premium-vector/find-food-logo-vector-food-search-logo-concept-design-concept-logo-logotype-element-template_7649-3792.jpg" 
                   alt="Receive Food" 
                   boxSize="100px"
                 />
@@ -144,6 +148,7 @@ export default function Landing() {
           </Stack>
         </Stack>
       </Container>
+      <Footer />
     </Box>
   );
 }

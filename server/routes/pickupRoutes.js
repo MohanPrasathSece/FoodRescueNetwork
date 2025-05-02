@@ -2,15 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
 const Pickup = require('../models/Pickup');
+const Donation = require('../models/Donation');
 
 // GET /api/pickups/my-pickups - Get pickups for the authenticated volunteer
 router.get('/my-pickups', auth, async (req, res) => {
   try {
     const pickups = await Pickup.find({ volunteer: req.user._id })
-      .populate({
-        path: 'donation',
-        populate: { path: 'donor', select: 'name organization' }
-      })
+      .populate({ path: 'donation', select: 'foodName description expirationDate status image' })
       .sort({ createdAt: -1 });
     res.json(pickups);
   } catch (error) {

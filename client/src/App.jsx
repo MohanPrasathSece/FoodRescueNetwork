@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ChakraProvider, CSSReset } from '@chakra-ui/react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import theme from './theme'; // Assuming your custom theme is in a file named 'theme.js'
 
 // Components
 import Navbar from './components/Navbar';
@@ -11,6 +12,10 @@ import Register from './pages/Register';
 import DonorDashboard from './pages/DonorDashboard';
 import VolunteerDashboard from './pages/VolunteerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import Help from './pages/Help';
+import Profile from './pages/Profile';
+import AuthLanding from './pages/AuthLanding';
+import History from './pages/History';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -29,7 +34,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 function App() {
   return (
-    <ChakraProvider>
+    <ChakraProvider theme={theme}>
       <CSSReset />
       <AuthProvider>
         <Router>
@@ -38,6 +43,11 @@ function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/home" element={
+              <ProtectedRoute>
+                <AuthLanding />
+              </ProtectedRoute>
+            } />
             <Route
               path="/donor/dashboard"
               element={
@@ -62,6 +72,17 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/help" element={<Help />} />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/history" element={
+              <ProtectedRoute>
+                <History />
+              </ProtectedRoute>
+            } />
           </Routes>
         </Router>
       </AuthProvider>

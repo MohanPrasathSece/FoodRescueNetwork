@@ -73,14 +73,19 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (updates) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.patch(
-        'http://localhost:5000/api/auth/profile',
+      const config = {
+        headers: { Authorization: `Bearer ${token}` }
+      };
+      // If sending FormData (with avatar), set proper Content-Type
+      if (updates instanceof FormData) {
+        config.headers['Content-Type'] = 'multipart/form-data';
+      }
+      const response = await axios.post(
+        'http://localhost:5000/api/profile',
         updates,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        config
       );
-      setUser(response.data);
+      setUser(prev => ({ ...prev, ...response.data }));
       setError(null);
       return response.data;
     } catch (error) {
