@@ -43,7 +43,7 @@ export default function Register() {
     try {
       const user = await register(formData);
       toast({ title: 'Registration successful', status: 'success', duration: 3000, isClosable: true });
-      navigate(`/${user.role}/dashboard`);
+      navigate('/home');
     } catch (error) {
       toast({ title: 'Registration failed', description: error.response?.data?.message || error.message || 'An unexpected error occurred', status: 'error', duration: 3000, isClosable: true });
     } finally {

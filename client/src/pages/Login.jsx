@@ -30,7 +30,7 @@ export default function Login() {
     try {
       const user = await login(email, password);
       toast({ title: 'Login successful', status: 'success', duration: 3000, isClosable: true });
-      navigate(`/${user.role}/dashboard`);
+      navigate('/home');
     } catch (error) {
       toast({ title: 'Login failed', description: error.response?.data?.message || error.message || 'An unexpected error occurred', status: 'error', duration: 3000, isClosable: true });
     } finally {
@@ -47,7 +47,7 @@ export default function Login() {
       <Stack spacing={8} mx={'auto'} maxW={'lg'} py={12} px={6}>
         <Stack align={'center'}>
           <Heading fontSize={'4xl'}>Sign in to your account</Heading>
-          <Text fontSize={'lg'} color={'gray.600'}>
+          <Text fontSize={'lg'} color={'gray.650'}>
             to start reducing food waste ✌️
           </Text>
         </Stack>

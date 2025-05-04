@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const Profile = require('../models/Profile');
 const { auth } = require('../middleware/auth');
+const multer = require('multer');
+
+// Configure multer for memory storage (avatar uploads)
+const storage = multer.memoryStorage();
+const upload = multer({ storage, limits: { fileSize: 2 * 1024 * 1024 } });
 
 // Get current user's profile
 router.get('/', auth, async (req, res) => {
@@ -14,12 +19,30 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Create or update profile
-router.post('/', auth, async (req, res) => {
+// Create or update profile (with optional avatar upload)
+router.post('/', auth, upload.single('avatar'), async (req, res) => {
   try {
-    let profile = await Profile.findOneAndUpdate(
+    // Build update data
+    const updateData = { userId: req.user._id, updatedAt: new Date() };
+    // Handle avatar file
+    if (req.file) {
+      updateData.avatar = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    }
+    // Append fields from body
+    ['name','email','phone'].forEach(field => {
+      if (req.body[field]) updateData[field] = req.body[field];
+    });
+    // Parse nested address fields
+    const addr = {};
+    ['street','city','state','zipCode'].forEach(key => {
+      const field = `address[${key}]`;
+      if (req.body[field]) addr[key] = req.body[field];
+    });
+    if (Object.keys(addr).length) updateData.address = addr;
+    // Upsert profile
+    const profile = await Profile.findOneAndUpdate(
       { userId: req.user._id },
-      { ...req.body, userId: req.user._id, updatedAt: new Date() },
+      updateData,
       { upsert: true, new: true }
     );
     res.json(profile);

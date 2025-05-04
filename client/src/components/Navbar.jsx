@@ -58,7 +58,9 @@ const Navbar = () => {
                 <Stack direction='row' spacing={4} alignItems='center'>
                   {/* Home link to landing page */}
                   <Button as={RouterLink} to='/' variant='ghost'>Home</Button>
-                  <Button as={RouterLink} to={`/${user.role}/dashboard`} variant='ghost'>Available Donations</Button>
+                  <Button as={RouterLink} to={`/${user.role}/dashboard`} variant='ghost'>
+                    {user.role === 'donor' ? 'My Donations' : 'Available Donations'}
+                  </Button>
                   <Button as={RouterLink} to='/history' variant='ghost'>History</Button>
                   <Button as={RouterLink} to='/profile' variant='ghost'>Profile</Button>
                   <Button as={RouterLink} to='/help' variant='ghost'>Help</Button>

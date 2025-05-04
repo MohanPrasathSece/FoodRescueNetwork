@@ -173,25 +173,37 @@ router.patch('/profile', auth, avatarUpload.single('avatar'), async (req, res) =
   }
 
   try {
+    // Log incoming updates for debugging
+    console.log('PATCH /profile updates:', req.body);
     // handle avatar file
     if (req.file) {
       req.user.avatar = '/uploads/avatars/' + req.file.filename;
     }
     // Handle nested address fields
+    let addressUpdated = false;
     updates.filter(u => u.startsWith('address[')).forEach(key => {
       const field = key.match(/address\[(.+)\]/)[1];
       req.user.address = req.user.address || {};
-      req.user.address[field] = req.body[key];
+      if (req.body[key] !== undefined && req.body[key] !== '') {
+        req.user.address[field] = req.body[key];
+        addressUpdated = true;
+      }
     });
+    if (addressUpdated) req.user.markModified('address');
     // Handle other fields
     updates.filter(u => !u.startsWith('address[')).forEach(update => {
       if (update !== 'address') {
-        req.user[update] = req.body[update];
+        if (req.body[update] !== undefined && req.body[update] !== '') {
+          req.user[update] = req.body[update];
+        }
       }
     });
     await req.user.save();
-    res.json(req.user);
+    // Always return updated user without password
+    const user = await User.findById(req.user._id).select('-password');
+    res.json(user);
   } catch (error) {
+    console.error('Error updating profile:', error);
     res.status(400).json({ message: 'Error updating profile', error: error.message });
   }
 });

@@ -120,9 +120,38 @@ router.get('/nearby', auth, async (req, res) => {
 // Get all available donations (public)
 router.get('/available', async (req, res) => {
   try {
-    const donations = await Donation.find({ status: 'available' })
-      .populate('donor', 'name organization')
-      .sort({ createdAt: -1 });
+    const { city, street, minimal } = req.query;
+    const query = { status: 'available' };
+    if (city) query['pickupAddress.city'] = { $regex: new RegExp(city, 'i') };
+    if (street) query['pickupAddress.street'] = { $regex: new RegExp(street, 'i') };
+
+    let donations;
+    if (minimal === 'true') {
+      donations = await Donation.find(query)
+        .select('foodName foodType quantity unit expirationDate pickupAddress donor status createdAt')
+        .populate('donor', 'name organization')
+        .sort({ expirationDate: 1 });
+    } else {
+      donations = await Donation.find(query)
+        .populate('donor', 'name organization')
+        .sort({ expirationDate: 1 });
+    }
+    
+    // If minimal=1, only return fields needed for map
+    if (minimal === '1') {
+      donations = donations.map(d => {
+        const obj = d.toObject();
+        return {
+          _id: obj._id,
+          foodName: obj.foodName,
+          foodType: obj.foodType,
+          pickupAddress: obj.pickupAddress,
+          location: obj.location,
+          expirationDate: obj.expirationDate
+        };
+      });
+      return res.json(donations);
+    }
 
     // Convert image buffer to base64 URL
     const formatted = donations.map(d => {
@@ -386,23 +415,15 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
 router.delete('/:id', auth, async (req, res) => {
   try {
     const donation = await Donation.findById(req.params.id);
-    
-    if (!donation) {
-      return res.status(404).json({ message: 'Donation not found' });
-    }
-    
-    // Check if user is the donor or an admin
+    if (!donation) return res.status(404).json({ message: 'Donation not found' });
     if (donation.donor.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized to delete this donation' });
     }
-    
-    // Don't allow deletion if donation is already claimed
     if (donation.status === 'claimed' && req.user.role !== 'admin') {
       return res.status(400).json({ message: 'Cannot delete a donation that has been claimed' });
     }
-    
-    await donation.remove();
-    
+    // Delete by ID
+    await Donation.findByIdAndDelete(req.params.id);
     res.json({ message: 'Donation removed' });
   } catch (error) {
     console.error('Error deleting donation:', error);

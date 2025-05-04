@@ -31,6 +31,8 @@ import { useAuth } from '../contexts/AuthContext';
 // set base URL for axios after imports
 axios.defaults.baseURL = 'http://localhost:5000';
 
+
+
 export default function VolunteerDashboard() {
   // color mode values
   const pageBg = useColorModeValue('gray.50','gray.800');
@@ -82,9 +84,19 @@ export default function VolunteerDashboard() {
   };
 
   const handlePickupRequest = async (donation) => {
-    setSelectedDonation(donation);
-    onOpen();
+    try {
+      const token = localStorage.getItem('token');
+      // Fetch full details for this donation
+      const response = await axios.get(`/api/donations/${donation._id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSelectedDonation(response.data);
+      onOpen();
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to load donation details', status: 'error', duration: 3000, isClosable: true });
+    }
   };
+
 
   const confirmPickup = async () => {
     try {
@@ -166,43 +178,85 @@ export default function VolunteerDashboard() {
   return (
     <Box
       py={10}
-      bgImage={`linear-gradient(rgba(255,255,255,0.75),rgba(255,255,255,0.75)), url('https://1.bp.blogspot.com/-hGztsaeIFhY/Wi046IYRhwI/AAAAAAAAAJ0/fkZLk1ZSqCcBYLbaWy8WUGzrLlOlOXFgQCPcBGAYYCw/s1600/DSC_0097.JPG')`}
-      bgBlendMode="overlay"
-      bgSize="cover"
-      bgPosition="center"
+      position="relative"
       color={textColor}
       minH="100vh"
+      _before={{
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        bgImage: `url('https://1.bp.blogspot.com/-hGztsaeIFhY/Wi046IYRhwI/AAAAAAAAAJ0/fkZLk1ZSqCcBYLbaWy8WUGzrLlOlOXFgQCPcBGAYYCw/s1600/DSC_0097.JPG')`,
+        bgSize: 'cover',
+        bgPosition: 'center',
+        filter: 'brightness(0.3)',
+        zIndex: 0,
+      }}
     >
-      <Container maxW="6xl" bg={containerBg} p={6} rounded="xl" boxShadow="2xl">
+      <Container maxW="6xl" px={4} mx="auto" position="relative" zIndex={1}>
         <Stack spacing={8}>
           {/* Available Donations */}
-          <Box bg={cardBg} p={4} borderRadius="md" boxShadow="sm">
-            <Heading size="lg" mb={5}>Available Donations</Heading>
+          <Box p={4}>
+            <Heading size="lg" mb={5}>Find Food</Heading>
             {availableDonations.length > 0 ? (
               <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
                 {availableDonations.filter(d => d.status !== 'claimed').map((donation) => (
                   <Card key={donation._id} p={4} boxShadow="md" _hover={{ transform: 'translateY(-4px)' }} transition="0.2s">
                     <CardHeader><Heading size="sm">{donation.foodName}</Heading></CardHeader>
                     <CardBody>
-                      <Image src={`http://localhost:5000${donation.imageUrl}`} alt={donation.foodName} boxSize="150px" objectFit="cover" mb={3} />
+                      {donation.imageUrl ? (
+                        <Image
+                          src={
+                            donation.imageUrl.startsWith('data:')
+                              ? donation.imageUrl
+                              : `http://localhost:5000${donation.imageUrl}`
+                          }
+                          alt={donation.foodName}
+                          boxSize="150px"
+                          objectFit="cover"
+                          mb={3}
+                        />
+                      ) : donation.image?.data ? (
+                        <Image
+                          src={`data:${donation.image.contentType};base64,${donation.image.data}`}
+                          alt={donation.foodName}
+                          boxSize="150px"
+                          objectFit="cover"
+                          mb={3}
+                        />
+                      ) : (
+                        <Box
+                          boxSize="150px"
+                          bg="gray.200"
+                          mb={3}
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="center"
+                          borderRadius="md"
+                        >
+                          <Text color="gray.500">No Image</Text>
+                        </Box>
+                      )}
                       <Box p={3}>
                         <Text fontSize="sm" noOfLines={2}>{donation.description}</Text>
-                      </Box>
-                      <Box height="200px" mb={4}>
-                        <iframe
-                          width="100%"
-                          height="100%"
-                          style={{ border: 0 }}
-                          loading="lazy"
-                          allowFullScreen
-                          src={`https://www.google.com/maps?q=${encodeURIComponent(`${donation.pickupAddress.street}, ${donation.pickupAddress.city}, ${donation.pickupAddress.state} ${donation.pickupAddress.zipCode}`)}&output=embed`}
-                        />
                       </Box>
                       <Text fontSize="sm" color="gray.700"><strong>Expires On:</strong> {new Date(donation.expirationDate).toLocaleString()}</Text>
                       <Text fontSize="sm" color="gray.700"><strong>Pickup Address:</strong> {donation.pickupAddress?.street}, {donation.pickupAddress?.city}, {donation.pickupAddress?.state} {donation.pickupAddress?.zipCode}</Text>
                     </CardBody>
-                    <CardFooter>
+                    <CardFooter justify="space-between">
                       <Button colorScheme="blue" onClick={() => handlePickupRequest(donation)}>Claim</Button>
+                      <Button
+                        as="a"
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${donation.pickupAddress.street}, ${donation.pickupAddress.city}, ${donation.pickupAddress.state} ${donation.pickupAddress.zipCode}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        size="sm"
+                        variant="outline"
+                      >
+                        View on Map
+                      </Button>
                     </CardFooter>
                   </Card>
                 ))}
@@ -221,19 +275,41 @@ export default function VolunteerDashboard() {
                   <Card key={donation._id} p={4} boxShadow="md" _hover={{ transform: 'translateY(-4px)' }} transition="0.2s">
                     <CardHeader><Heading size="sm">{donation.foodName}</Heading></CardHeader>
                     <CardBody>
-                      <Image src={`http://localhost:5000${donation.imageUrl}`} alt={donation.foodName} boxSize="150px" objectFit="cover" mb={3} />
+                      {donation.imageUrl ? (
+                        <Image
+                          src={
+                            donation.imageUrl.startsWith('data:')
+                              ? donation.imageUrl
+                              : `http://localhost:5000${donation.imageUrl}`
+                          }
+                          alt={donation.foodName}
+                          boxSize="150px"
+                          objectFit="cover"
+                          mb={3}
+                        />
+                      ) : donation.image?.data ? (
+                        <Image
+                          src={`data:${donation.image.contentType};base64,${donation.image.data}`}
+                          alt={donation.foodName}
+                          boxSize="150px"
+                          objectFit="cover"
+                          mb={3}
+                        />
+                      ) : (
+                        <Box
+                          boxSize="150px"
+                          bg="gray.200"
+                          mb={3}
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="center"
+                          borderRadius="md"
+                        >
+                          <Text color="gray.500">No Image</Text>
+                        </Box>
+                      )}
                       <Box p={3}>
                         <Text fontSize="sm" noOfLines={2}>{donation.description}</Text>
-                      </Box>
-                      <Box height="200px" mb={4}>
-                        <iframe
-                          width="100%"
-                          height="100%"
-                          style={{ border: 0 }}
-                          loading="lazy"
-                          allowFullScreen
-                          src={`https://www.google.com/maps?q=${encodeURIComponent(`${donation.pickupAddress.street}, ${donation.pickupAddress.city}, ${donation.pickupAddress.state} ${donation.pickupAddress.zipCode}`)}&output=embed`}
-                        />
                       </Box>
                       <Text fontSize="sm" color="gray.700"><strong>Expires On:</strong> {new Date(donation.expirationDate).toLocaleString()}</Text>
                       <Text fontSize="sm" color="gray.700"><strong>Pickup Address:</strong> {donation.pickupAddress?.street}, {donation.pickupAddress?.city}, {donation.pickupAddress?.state} {donation.pickupAddress?.zipCode}</Text>
@@ -259,11 +335,21 @@ export default function VolunteerDashboard() {
           <ModalBody>
             <Text>Are you sure you want to claim this donation?</Text>
             {selectedDonation && (
-              <Box mt={4}>
-                <Text><strong>Food Name:</strong> {selectedDonation.foodName}</Text>
-                <Text><strong>Quantity:</strong> {selectedDonation.quantity} {selectedDonation.unit}</Text>
+              <>
+                <Heading size="md" mb={2}>{selectedDonation.foodName}</Heading>
+                {selectedDonation.image && (
+                  <Image
+                    src={selectedDonation.image.data ? `data:${selectedDonation.image.contentType};base64,${selectedDonation.image.data}` : selectedDonation.image}
+                    alt="Donation"
+                    mb={2}
+                    maxH="200px"
+                    objectFit="cover"
+                  />
+                )}
+                <Text mb={2}><b>Type:</b> {selectedDonation.foodType}</Text>
+                <Text mb={2}><b>Quantity:</b> {selectedDonation.quantity} {selectedDonation.unit}</Text>
                 <Text><strong>Address:</strong> {selectedDonation.pickupAddress?.street}, {selectedDonation.pickupAddress?.city}, {selectedDonation.pickupAddress?.state} {selectedDonation.pickupAddress?.zipCode}</Text>
-              </Box>
+              </>
             )}
           </ModalBody>
           <ModalFooter>

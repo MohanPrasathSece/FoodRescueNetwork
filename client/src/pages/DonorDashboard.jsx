@@ -32,6 +32,8 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useColorModeValue } from '@chakra-ui/react';
 
+
+
 export default function DonorDashboard() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [donations, setDonations] = useState([]);
@@ -56,6 +58,7 @@ export default function DonorDashboard() {
   // Match volunteer styling
   const containerBg = useColorModeValue('white','gray.700');
   const cardBg = useColorModeValue('white','gray.600');
+  const textColor = useColorModeValue('gray.800','whiteAlpha.900');
 
   useEffect(() => {
     fetchDonations();
@@ -171,10 +174,11 @@ export default function DonorDashboard() {
   return (
     <Box
       py={10}
-      bgImage="url('/donor-bg.jpg')"
+      bgImage={`linear-gradient(rgba(255,255,255,0.4),rgba(255,255,255,0.4)), url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1500&q=80')`}
+      bgBlendMode="overlay"
       bgSize="cover"
       bgPosition="center"
-      color="inherit"
+      color={textColor}
       minH="100vh"
     >
       <Container maxW="container.xl" bg={containerBg} p={6} rounded="xl" boxShadow="2xl">
@@ -202,7 +206,7 @@ export default function DonorDashboard() {
           </Button>
         </Box>
         <Box bg={cardBg} p={4} borderRadius="md" boxShadow="sm" mt={6}>
-          <Heading size="md" mb={4}>Available Food</Heading>
+          <Heading size="md" mb={4}>My Donations</Heading>
           {activeDonations.length > 0 ? (
             <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing={4}>
               {activeDonations.map(donation => (
@@ -218,7 +222,14 @@ export default function DonorDashboard() {
                   </Box>
                   <Box p={3}>
                     <Text fontSize="sm" noOfLines={2}>{donation.description}</Text>
+                    <Text fontSize="sm" color="gray.700">
+                      <strong>Pickup Address:</strong> {donation.pickupAddress?.street}, {donation.pickupAddress?.city}, {donation.pickupAddress?.state} {donation.pickupAddress?.zipCode}
+                    </Text>
                   </Box>
+                  <CardFooter justify="flex-end">
+                    <Button size="sm" onClick={() => handleEdit(donation)}>Edit</Button>
+                    <Button size="sm" ml={2} colorScheme="red" variant="outline" onClick={() => handleDelete(donation._id)}>Delete</Button>
+                  </CardFooter>
                 </Card>
               ))}
             </SimpleGrid>

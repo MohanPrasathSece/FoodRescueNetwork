@@ -74,7 +74,8 @@ router.delete('/donations/:id', async (req, res) => {
     if (!donation) {
       return res.status(404).json({ message: 'Donation not found' });
     }
-    await donation.remove();
+    // Delete donation using findByIdAndDelete
+    await Donation.findByIdAndDelete(req.params.id);
     // Send email notification to donor
     if (donation.donor && donation.donor.email) {
       try {

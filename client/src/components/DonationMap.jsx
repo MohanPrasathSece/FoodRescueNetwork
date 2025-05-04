@@ -19,11 +19,18 @@ const DonationMap = () => {
     expiryTimeframe: 'all', // all, today, tomorrow, week
   });
 
-  // Fetch available donations
-  const fetchDonations = async () => {
+  // Fetch available donations, filter by city/street if provided
+  const fetchDonations = async (city, street) => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/donations/available');
+      let url = '/api/donations/available';
+      if (city || street) {
+        const params = [];
+        if (city) params.push(`city=${encodeURIComponent(city)}`);
+        if (street) params.push(`street=${encodeURIComponent(street)}`);
+        url += '?' + params.join('&');
+      }
+      const response = await axios.get(url);
       setDonations(response.data);
     } catch (err) {
       setMapError('Failed to load donations');
@@ -32,6 +39,7 @@ const DonationMap = () => {
     }
   };
 
+  // Optionally, you could add city/street as dependencies if using filters
   useEffect(() => {
     fetchDonations();
   }, []);

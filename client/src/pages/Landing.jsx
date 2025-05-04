@@ -36,6 +36,7 @@ export default function Landing() {
           spacing={{ base: 8, md: 14 }}
           py={{ base: 10, md: 20 }}>
           <Heading
+            fontFamily="'Poppins', sans-serif"
             fontWeight={700}
             fontSize={{ base: '3xl', sm: '4xl', md: '6xl' }}
             lineHeight={'110%'}>
@@ -91,13 +92,18 @@ export default function Landing() {
                   to='/register?role=donor'
                   colorScheme={'green'}
                   rounded={'full'}
-                  px={6}
-                  size="lg"
+                  px={10}
+                  size="xl"
                   width="100%"
+                  fontSize={{ base: 'xl', md: '2xl' }}
+                  height={{ base: '60px', md: '70px' }}
+                  fontWeight="bold"
+                  boxShadow="2xl"
                   _hover={{
                     bg: 'green.500',
+                    transform: 'scale(1.05)',
                   }}>
-                  Become a Donor
+                  🍲 Donate Food
                 </Button>
               </VStack>
               
@@ -121,13 +127,18 @@ export default function Landing() {
                   to='/register?role=volunteer'
                   colorScheme={'blue'}
                   rounded={'full'}
-                  px={6}
-                  size="lg"
+                  px={10}
+                  size="xl"
                   width="100%"
+                  fontSize={{ base: 'xl', md: '2xl' }}
+                  height={{ base: '60px', md: '70px' }}
+                  fontWeight="bold"
+                  boxShadow="2xl"
                   _hover={{
                     bg: 'blue.500',
+                    transform: 'scale(1.05)',
                   }}>
-                  Find Available Food
+                  🍛 Find Food
                 </Button>
               </VStack>
             </SimpleGrid>
@@ -149,6 +160,7 @@ export default function Landing() {
         </Stack>
       </Container>
       <Footer />
+
     </Box>
   );
 }

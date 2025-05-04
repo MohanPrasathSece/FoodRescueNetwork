@@ -207,7 +207,8 @@ router.delete('/:id', auth, authorize('donor'), async (req, res) => {
     if (donation.status !== 'available') {
       return res.status(400).json({ message: 'Cannot delete claimed or completed donation' });
     }
-    await donation.remove();
+    // Delete donation using findByIdAndDelete
+    await Donation.findByIdAndDelete(req.params.id);
     res.json({ message: 'Donation deleted' });
   } catch (error) {
     console.error('Error deleting donation:', error);
