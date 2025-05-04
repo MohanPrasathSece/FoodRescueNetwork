@@ -5,6 +5,7 @@ const multer = require('multer');
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const { sendEmail } = require('./services/emailService');
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '.env') });
@@ -67,6 +68,21 @@ app.use('/api/profile', profileRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Food Rescue Hub API' });
+});
+
+// Test email endpoint
+app.get('/api/test-email', async (req, res) => {
+  try {
+    const result = await sendEmail(
+      process.env.EMAIL_USER,
+      'donationRequest',
+      ['Test Donor', 'Test Food', 'Test Requester']
+    );
+    res.json(result);
+  } catch (err) {
+    console.error('Test email failed:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Scheduled tasks for automatic expiration of donations

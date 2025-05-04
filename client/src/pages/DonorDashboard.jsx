@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Container,
   Heading,
   SimpleGrid,
   Button,
@@ -26,17 +25,17 @@ import {
   Badge,
   useToast,
   Image,
-  AspectRatio
+  AspectRatio,
+  Skeleton
 } from '@chakra-ui/react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useColorModeValue } from '@chakra-ui/react';
 
-
-
 export default function DonorDashboard() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [donations, setDonations] = useState([]);
+  const [imageLoaded, setImageLoaded] = useState({});
   const [formData, setFormData] = useState({
     foodName: '',
     description: '',
@@ -65,21 +64,23 @@ export default function DonorDashboard() {
   }, []);
 
   const fetchDonations = async () => {
+    // Load cached donations for instant UI
+    const cache = sessionStorage.getItem('myDonations');
+    if (cache) setDonations(JSON.parse(cache));
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/donations/my-donations', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.get('/api/donations/my-donations', { headers: { Authorization: `Bearer ${token}` } });
       setDonations(response.data);
+      // Cache minimal donation metadata only
+      try {
+        const meta = response.data.map(({ _id, foodName, expirationDate, imageUrl, status }) => ({ _id, foodName, expirationDate, imageUrl, status }));
+        sessionStorage.setItem('myDonations', JSON.stringify(meta));
+      } catch (e) {
+        console.warn('Failed to cache donations:', e);
+      }
     } catch (error) {
       console.error('Error fetching donations:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch donations',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      toast({ title: 'Error', description: 'Failed to fetch donations', status: 'error', duration: 3000, isClosable: true });
     }
   };
 
@@ -172,18 +173,14 @@ export default function DonorDashboard() {
   const activeDonations = donations.filter(d => d.status === 'available');
 
   return (
-    <Box
-      py={10}
-      bgImage={`linear-gradient(rgba(255,255,255,0.4),rgba(255,255,255,0.4)), url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1500&q=80')`}
-      bgBlendMode="overlay"
+    <Box py={10} px={{ base: 4, md: 8 }}
+      bgImage={`linear-gradient(rgba(255,255,255,0.7), rgba(255,255,255,0.7)), url('https://thumbs.dreamstime.com/z/indian-children-beach-goa-india-november-unidentified-playing-157502713.jpg')`}
       bgSize="cover"
       bgPosition="center"
-      color={textColor}
-      minH="100vh"
     >
-      <Container maxW="container.xl" bg={containerBg} p={6} rounded="xl" boxShadow="2xl">
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={5} bg="green.50" p={4} borderRadius="lg" boxShadow="md">
-          <Heading size="lg" color="green.700">My Donations</Heading>
+      <Box maxW="container.xl" mx="auto">
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={5} bg="var(--chakra-colors-green-50)" p={4} borderRadius="lg" boxShadow="md">
+          <Heading size="lg" color="var(--chakra-colors-green-700)">My Donations</Heading>
           <Button
             colorScheme="green"
             size="lg"
@@ -192,7 +189,7 @@ export default function DonorDashboard() {
             py={6}
             borderRadius="full"
             boxShadow="lg"
-            _hover={{ bg: 'green.400', color: 'white' }}
+            _hover={{ bg: 'var(--chakra-colors-green-400)', color: 'white' }}
             onClick={() => {
               setEditingDonation(null);
               setFormData({
@@ -205,7 +202,7 @@ export default function DonorDashboard() {
             + New Donation
           </Button>
         </Box>
-        <Box bg={cardBg} p={4} borderRadius="md" boxShadow="sm" mt={6}>
+        <Box mt={6}>
           <Heading size="md" mb={4}>My Donations</Heading>
           {activeDonations.length > 0 ? (
             <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing={4}>
@@ -213,9 +210,17 @@ export default function DonorDashboard() {
                 <Card key={donation._id} overflow="hidden" boxShadow="md" borderRadius="md" _hover={{ transform: 'scale(1.02)', boxShadow: 'lg', transition: '0.2s' }}>
                   <Box position="relative" width="100%">
                     <AspectRatio ratio={4/3}>
-                      <Image src={donation.imageUrl} alt={donation.foodName} objectFit="cover" />
+                      <Skeleton isLoaded={!!imageLoaded[donation._id]}> 
+                        <Image
+                          src={donation.imageUrl}
+                          alt={donation.foodName}
+                          objectFit="cover"
+                          loading="lazy"
+                          onLoad={() => setImageLoaded(prev => ({ ...prev, [donation._id]: true }))}
+                        />
+                      </Skeleton>
                     </AspectRatio>
-                    <Badge position="absolute" top={2} left={2} colorScheme="green">{donation.status}</Badge>
+                    <Badge position="absolute" top={2} left={2} color="var(--chakra-colors-green-400)" bg="var(--chakra-colors-green-100)">{donation.status}</Badge>
                     <Box position="absolute" bottom="0" width="100%" bgGradient="linear(to-t, rgba(0,0,0,0.7), transparent)" color="white" p={2}>
                       <Heading size="sm" noOfLines={1}>{donation.foodName}</Heading>
                     </Box>
@@ -224,6 +229,9 @@ export default function DonorDashboard() {
                     <Text fontSize="sm" noOfLines={2}>{donation.description}</Text>
                     <Text fontSize="sm" color="gray.700">
                       <strong>Pickup Address:</strong> {donation.pickupAddress?.street}, {donation.pickupAddress?.city}, {donation.pickupAddress?.state} {donation.pickupAddress?.zipCode}
+                    </Text>
+                    <Text fontSize="sm" color="gray.700">
+                      <strong>Expires On:</strong> {new Date(donation.expirationDate).toLocaleString()}
                     </Text>
                   </Box>
                   <CardFooter justify="flex-end">
@@ -287,7 +295,7 @@ export default function DonorDashboard() {
             </form>
           </ModalContent>
         </Modal>
-      </Container>
+      </Box>
     </Box>
   );
 }

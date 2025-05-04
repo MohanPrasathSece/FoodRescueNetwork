@@ -411,23 +411,40 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
   }
 });
 
-// Delete a donation
-router.delete('/:id', auth, async (req, res) => {
+// Update donation by donor
+router.patch('/:id', auth, authorize('donor'), async (req, res) => {
   try {
-    const donation = await Donation.findById(req.params.id);
-    if (!donation) return res.status(404).json({ message: 'Donation not found' });
-    if (donation.donor.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized to delete this donation' });
+    const donation = await Donation.findOne({ _id: req.params.id, donor: req.user._id });
+    if (!donation) {
+      return res.status(404).json({ message: 'Donation not found' });
     }
-    if (donation.status === 'claimed' && req.user.role !== 'admin') {
-      return res.status(400).json({ message: 'Cannot delete a donation that has been claimed' });
+    if (donation.status !== 'available') {
+      return res.status(400).json({ message: 'Cannot update claimed or completed donation' });
     }
-    // Delete by ID
+    Object.assign(donation, req.body);
+    await donation.save();
+    res.json(donation);
+  } catch (error) {
+    console.error('Error updating donation:', error);
+    res.status(400).json({ message: 'Error updating donation', error: error.message });
+  }
+});
+
+// Delete a donation
+router.delete('/:id', auth, authorize('donor'), async (req, res) => {
+  try {
+    const donation = await Donation.findOne({ _id: req.params.id, donor: req.user._id });
+    if (!donation) {
+      return res.status(404).json({ message: 'Donation not found' });
+    }
+    if (donation.status !== 'available') {
+      return res.status(400).json({ message: 'Cannot delete claimed or completed donation' });
+    }
     await Donation.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Donation removed' });
+    res.json({ message: 'Donation deleted' });
   } catch (error) {
     console.error('Error deleting donation:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Error deleting donation', error: error.message });
   }
 });
 
@@ -678,6 +695,41 @@ router.get('/user/history', auth, async (req, res) => {
     res.json(donationsWithImageUrls);
   } catch (error) {
     console.error('Error fetching donation history:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get current donor's own available donations (for donor dashboard)
+router.get('/my-donations', auth, authorize('donor'), async (req, res) => {
+  try {
+    // Fetch only required fields to minimize payload
+    const donations = await Donation.find({ donor: req.user._id, status: 'available' })
+      .select('foodName description expirationDate pickupAddress status createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+    // Provide just a URL for image; actual data will be fetched separately
+    const donationsWithImageUrls = donations.map(donation => ({
+      ...donation,
+      imageUrl: `/api/donations/${donation._id}/image`,
+      // strip out binary buffer
+      image: undefined
+    }));
+    res.json(donationsWithImageUrls);
+  } catch (error) {
+    console.error('Error fetching my donations:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Serve raw image for a donation
+router.get('/:id/image', async (req, res) => {
+  try {
+    const donation = await Donation.findById(req.params.id);
+    if (!donation || !donation.image?.data) return res.status(404).json({ message: 'Image not found' });
+    res.set('Content-Type', donation.image.contentType);
+    res.send(donation.image.data);
+  } catch (error) {
+    console.error('Error serving image:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

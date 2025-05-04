@@ -1,12 +1,30 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
+// Validate and trim email credentials
+const rawEmailUser = process.env.EMAIL_USER;
+const rawEmailPass = process.env.EMAIL_PASS;
+if (!rawEmailUser || !rawEmailPass) {
+  console.error('Missing EMAIL_USER or EMAIL_PASS in environment variables');
+}
+const emailUser = String(rawEmailUser).trim();
+const emailPass = String(rawEmailPass).trim();
+
 // Create a transporter object
 const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || 'gmail',
+  service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
+    user: emailUser,
+    pass: emailPass
+  }
+});
+
+// Verify SMTP configuration on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('Email transporter verification failed:', error);
+  } else {
+    console.log('Email transporter is ready');
   }
 });
 
@@ -111,7 +129,7 @@ const sendEmail = async (to, template, data) => {
     const { subject, html } = emailTemplates[template](...data);
     
     const mailOptions = {
-      from: `"Food Rescue Hub" <${process.env.EMAIL_USER}>`,
+      from: `"Food Rescue Hub" <${emailUser}>`,
       to,
       subject,
       html
