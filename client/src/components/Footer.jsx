@@ -10,11 +10,19 @@ export default function Footer() {
           justify="space-between"
           align="center"
         >
-          <Text>© {new Date().getFullYear()} Food Rescue Network. All rights reserved.</Text>
+          <Text>
+            Contact: <Link href="tel:+919025421149" color="teal.200">+91 90254 21149</Link> | <Link href="mailto:mohanprasath563@gmail.com" color="teal.200">mohanprasath563@gmail.com</Link>
+          </Text>
           <Stack direction="row" spacing={4}>
             <Link href="#" aria-label="Facebook"><Icon as={FaFacebook} boxSize={5} /></Link>
             <Link href="#" aria-label="Twitter"><Icon as={FaTwitter} boxSize={5} /></Link>
-            <Link href="#" aria-label="Instagram"><Icon as={FaInstagram} boxSize={5} /></Link>
+            <Link
+              href="https://www.instagram.com/food_rescue_network?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+              isExternal
+              aria-label="Instagram"
+            >
+              <Icon as={FaInstagram} boxSize={5} />
+            </Link>
           </Stack>
         </Stack>
       </Container>

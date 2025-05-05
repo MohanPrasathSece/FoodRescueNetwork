@@ -199,7 +199,9 @@ export default function VolunteerDashboard() {
         <Stack spacing={8}>
           {/* Available Donations */}
           <Box p={4}>
-            <Heading size="lg" mb={5}>Find Food</Heading>
+            <Box bg={containerBg} p={4} borderRadius="md" boxShadow="md" mb={5}>
+              <Heading size="lg">Find Food</Heading>
+            </Box>
             {availableDonations.length > 0 ? (
               <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
                 {availableDonations.filter(d => d.status !== 'claimed').map((donation) => (

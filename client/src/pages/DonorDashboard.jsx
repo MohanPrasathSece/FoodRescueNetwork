@@ -203,21 +203,36 @@ export default function DonorDashboard() {
           </Button>
         </Box>
         <Box mt={6}>
-          <Heading size="md" mb={4}>My Donations</Heading>
           {activeDonations.length > 0 ? (
             <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing={4}>
               {activeDonations.map(donation => (
                 <Card key={donation._id} overflow="hidden" boxShadow="md" borderRadius="md" _hover={{ transform: 'scale(1.02)', boxShadow: 'lg', transition: '0.2s' }}>
                   <Box position="relative" width="100%">
                     <AspectRatio ratio={4/3}>
-                      <Skeleton isLoaded={!!imageLoaded[donation._id]}> 
-                        <Image
-                          src={donation.imageUrl}
-                          alt={donation.foodName}
-                          objectFit="cover"
-                          loading="lazy"
-                          onLoad={() => setImageLoaded(prev => ({ ...prev, [donation._id]: true }))}
-                        />
+                      <Skeleton isLoaded={!!imageLoaded[donation._id]}>  
+                        {donation.imageUrl ? (
+                          <Image
+                            src={
+                              donation.imageUrl.startsWith('data:')
+                                ? donation.imageUrl
+                                : `http://localhost:5000${donation.imageUrl}`
+                            }
+                            alt={donation.foodName}
+                            objectFit="cover"
+                            loading="lazy"
+                            onLoad={() => setImageLoaded(prev => ({ ...prev, [donation._id]: true }))}
+                          />
+                        ) : (
+                          <Box
+                            boxSize="150px"
+                            bg="gray.200"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                          >
+                            <Text>No Image</Text>
+                          </Box>
+                        )}
                       </Skeleton>
                     </AspectRatio>
                     <Badge position="absolute" top={2} left={2} color="var(--chakra-colors-green-400)" bg="var(--chakra-colors-green-100)">{donation.status}</Badge>
