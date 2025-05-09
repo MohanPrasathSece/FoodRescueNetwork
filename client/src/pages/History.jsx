@@ -57,11 +57,12 @@ export default function History() {
         Object.entries(grouped).map(([date, list]) => (
           <Container key={date} maxW="container.lg" bg={sectionBg} p={6} rounded="lg" mb={6} borderWidth="1px" borderColor={borderColor} boxShadow="md">
             <Heading size="lg" mb={4} color="teal.500">{date}</Heading>
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+            <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing={6}>
               {list.map(d => (
                 <Box key={d._id} bg={cardBg} p={4} rounded="md" boxShadow="sm" borderLeftWidth="4px" borderLeftColor={d.status === 'completed' ? 'green.400' : 'red.400'}>
                   <Image src={d.imageUrl} alt={d.foodName} boxSize="60px" objectFit="cover" mb={2} rounded="sm" />
                   <Text fontWeight="bold" mb={1}>{d.foodName}</Text>
+                  <Text fontSize="sm" mb={1}><strong>Quantity:</strong> {d.quantity} {d.unit}</Text>
                   <Text fontSize="sm" color={d.status === 'completed' ? 'green.600' : 'red.600'}>
                     {d.status === 'completed' ?
                       `Delivered: ${new Date(d.updatedAt).toLocaleString()}` :

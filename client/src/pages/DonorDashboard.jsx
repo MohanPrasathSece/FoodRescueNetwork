@@ -206,7 +206,7 @@ export default function DonorDashboard() {
         </Box>
         <Box mt={6}>
           {activeDonations.length > 0 ? (
-            <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing={4}>
+            <SimpleGrid columns={{ base: 1, sm: 2, md: 2, lg: 4 }} spacing={4}>
               {activeDonations.map(donation => (
                 <Card key={donation._id} overflow="hidden" boxShadow="md" borderRadius="md" _hover={{ transform: 'scale(1.02)', boxShadow: 'lg', transition: '0.2s' }}>
                   <Box position="relative" width="100%">
@@ -238,13 +238,14 @@ export default function DonorDashboard() {
                       </Skeleton>
                     </AspectRatio>
                     <Badge position="absolute" top={2} left={2} color="var(--chakra-colors-green-400)" bg="var(--chakra-colors-green-100)">{donation.status}</Badge>
+                  <Badge position="absolute" top={2} right={2} colorScheme="purple">{donation.quantity} {donation.unit}</Badge>
                     <Box position="absolute" bottom="0" width="100%" bgGradient="linear(to-t, rgba(0,0,0,0.7), transparent)" color="white" p={2}>
                       <Heading size="sm" noOfLines={1}>{donation.foodName}</Heading>
                     </Box>
                   </Box>
                   <Box p={3}>
                     <Text fontSize="sm" noOfLines={2}>{donation.description}</Text>
-                    <Text fontSize="sm"><strong>Quantity:</strong> {donation.quantity} {donation.unit}</Text>
+                    {/* Quantity already shown in badge above for compactness */}
                     <Text fontSize="sm" color="gray.700">
                       <strong>Pickup Address:</strong> {donation.pickupAddress?.street}, {donation.pickupAddress?.city}, {donation.pickupAddress?.state} {donation.pickupAddress?.zipCode}
                     </Text>

@@ -26,7 +26,7 @@ export default function Landing() {
 
   return (
     <Box bg="green.50" minH="100vh">
-      <Container maxW={'6xl'} pt={10}>
+      <Container maxW={{ base: 'sm', md: '4xl', xl: '6xl' }} pt={{ base: 4, md: 10 }}>
         <Flex justifyContent="flex-end" mb={4}></Flex>
         
         {/* Hero Section */}

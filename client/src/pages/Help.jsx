@@ -36,8 +36,8 @@ export default function Help() {
   };
 
   return (
-    <Box py={10} bg={pageBg}>
-      <Container maxW="lg" bg={containerBg} p={8} rounded="md" boxShadow="md" color={textColor}>
+    <Box py={{ base: 4, md: 10 }} bg={pageBg}>
+      <Container maxW={{ base: 'sm', md: 'lg' }} bg={containerBg} p={{ base: 4, md: 8 }} rounded="md" boxShadow="md" color={textColor}>
         <Heading mb={6} textAlign="center" color="green.500">
           Contact Us
         </Heading>

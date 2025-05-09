@@ -93,8 +93,8 @@ export default function Profile() {
     return <Box py={20} textAlign="center"><Text fontSize="xl">Loading profile...</Text></Box>;
   }
   return (
-    <Box py={10} bg={pageBg} color={textColor}>
-      <Container maxW="md" bg={containerBg} p={8} rounded="md" boxShadow="md">
+    <Box py={{ base: 4, md: 10 }} bg={pageBg} color={textColor}>
+      <Container maxW={{ base: 'sm', md: 'md' }} bg={containerBg} p={{ base: 4, md: 8 }} rounded="md" boxShadow="md">
         <Heading mb={4} color="green.500">Profile Settings</Heading>
         <form onSubmit={handleSubmit}>
           <Avatar src={form.avatar} size="xl" mb={4} />

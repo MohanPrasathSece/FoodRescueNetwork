@@ -200,7 +200,7 @@ export default function VolunteerDashboard() {
               </Heading>
             </Box>
             {availableDonations.length > 0 ? (
-              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
+              <SimpleGrid columns={{ base: 1, sm: 2, md: 2, lg: 3 }} spacing={8}>
                 {availableDonations.filter(d => d.status !== 'claimed').map((donation) => (
                   <Card key={donation._id} p={4} boxShadow="md" _hover={{ transform: 'translateY(-4px)' }} transition="0.2s">
                     <CardHeader><Heading size="sm">{donation.foodName}</Heading></CardHeader>
@@ -240,6 +240,7 @@ export default function VolunteerDashboard() {
                       )}
                       <Box p={3}>
                         <Text fontSize="sm" noOfLines={2}>{donation.description}</Text>
+                        <Text fontSize="sm"><strong>Quantity:</strong> {donation.quantity} {donation.unit}</Text>
                       </Box>
                       <Text fontSize="sm" color="gray.700"><strong>Expires On:</strong> {new Date(donation.expirationDate).toLocaleString()}</Text>
                       <Text fontSize="sm" color="gray.700"><strong>Pickup Address:</strong> {donation.pickupAddress?.street}, {donation.pickupAddress?.city}, {donation.pickupAddress?.state} {donation.pickupAddress?.zipCode}</Text>
@@ -271,7 +272,7 @@ export default function VolunteerDashboard() {
               <Heading size="md" mb={4} color="green.700">
                 Pending Delivery <Badge ml={2} colorScheme="green">{historyDonations.filter(d => d.status === 'claimed').length}</Badge>
               </Heading>
-              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
+              <SimpleGrid columns={{ base: 1, sm: 2, md: 2, lg: 3 }} spacing={8}>
                 {historyDonations.filter(d => d.status === 'claimed').map((donation) => (
                   <Card key={donation._id} p={4} boxShadow="md" _hover={{ transform: 'translateY(-4px)' }} transition="0.2s">
                     <CardHeader><Heading size="sm">{donation.foodName}</Heading></CardHeader>
@@ -311,6 +312,7 @@ export default function VolunteerDashboard() {
                       )}
                       <Box p={3}>
                         <Text fontSize="sm" noOfLines={2}>{donation.description}</Text>
+                        <Text fontSize="sm"><strong>Quantity:</strong> {donation.quantity} {donation.unit}</Text>
                       </Box>
                       <Text fontSize="sm" color="gray.700"><strong>Expires On:</strong> {new Date(donation.expirationDate).toLocaleString()}</Text>
                       <Text fontSize="sm" color="gray.700"><strong>Pickup Address:</strong> {donation.pickupAddress?.street}, {donation.pickupAddress?.city}, {donation.pickupAddress?.state} {donation.pickupAddress?.zipCode}</Text>
