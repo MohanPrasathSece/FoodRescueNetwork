@@ -28,11 +28,6 @@ import {
 } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
 
-// set base URL for axios after imports
-axios.defaults.baseURL = 'http://localhost:5000';
-
-
-
 export default function VolunteerDashboard() {
   // color mode values
   const pageBg = useColorModeValue('gray.50','gray.800');
@@ -200,7 +195,9 @@ export default function VolunteerDashboard() {
           {/* Available Donations */}
           <Box p={4}>
             <Box bg={containerBg} p={4} borderRadius="md" boxShadow="md" mb={5}>
-              <Heading size="lg">Find Food</Heading>
+              <Heading size="lg">
+                Find Food <Badge ml={2} colorScheme="blue">{availableDonations.length}</Badge>
+              </Heading>
             </Box>
             {availableDonations.length > 0 ? (
               <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
@@ -271,7 +268,9 @@ export default function VolunteerDashboard() {
           {/* Claimed by Me */}
           {historyDonations.filter(d => d.status === 'claimed').length > 0 && (
             <Box bg="green.50" p={4} borderRadius="md" boxShadow="sm">
-              <Heading size="md" mb={4} color="green.700">Pending Delivery</Heading>
+              <Heading size="md" mb={4} color="green.700">
+                Pending Delivery <Badge ml={2} colorScheme="green">{historyDonations.filter(d => d.status === 'claimed').length}</Badge>
+              </Heading>
               <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
                 {historyDonations.filter(d => d.status === 'claimed').map((donation) => (
                   <Card key={donation._id} p={4} boxShadow="md" _hover={{ transform: 'translateY(-4px)' }} transition="0.2s">

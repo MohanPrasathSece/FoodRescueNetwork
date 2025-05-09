@@ -180,7 +180,9 @@ export default function DonorDashboard() {
     >
       <Box maxW="container.xl" mx="auto">
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={5} bg="var(--chakra-colors-green-50)" p={4} borderRadius="lg" boxShadow="md">
-          <Heading size="lg" color="var(--chakra-colors-green-700)">My Donations</Heading>
+          <Heading size="lg" color="var(--chakra-colors-green-700)">
+            My Donations <Badge ml={2} colorScheme="green">{activeDonations.length}</Badge>
+          </Heading>
           <Button
             colorScheme="green"
             size="lg"
@@ -242,6 +244,7 @@ export default function DonorDashboard() {
                   </Box>
                   <Box p={3}>
                     <Text fontSize="sm" noOfLines={2}>{donation.description}</Text>
+                    <Text fontSize="sm"><strong>Quantity:</strong> {donation.quantity} {donation.unit}</Text>
                     <Text fontSize="sm" color="gray.700">
                       <strong>Pickup Address:</strong> {donation.pickupAddress?.street}, {donation.pickupAddress?.city}, {donation.pickupAddress?.state} {donation.pickupAddress?.zipCode}
                     </Text>

@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const { sendEmail } = require('./services/emailService');
+const morgan = require('morgan');
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '.env') });
@@ -20,8 +21,23 @@ console.log('Environment variables loaded:', {
 
 const app = express();
 
+// Request logging for debugging
+app.use(morgan('dev'));
+
+// CORS configuration: allow all origins (temp debug)
+app.use((req, res, next) => {
+  console.log('Request Origin:', req.header('Origin'));
+  next();
+});
+app.use(cors({ origin: true, credentials: true }));
+
+// Health check endpoint for debugging connectivity
+app.options('*', cors()); // preflight
+app.get('/api/ping', (req, res) => {
+  res.json({ alive: true, time: new Date().toISOString() });
+});
+
 // Middleware
-app.use(cors());
 app.use(express.json());
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
